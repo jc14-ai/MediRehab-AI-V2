@@ -4,6 +4,6 @@ type LabelProps = {
 
 export default function Label({text}:LabelProps){
     return (
-        <label className="">{text}</label>
+        <label className="text-black">{text}</label>
     );
 }

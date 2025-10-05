@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <div className="flex flex-col justify-center items-center h-screen w-screen bg-white">
       <SignInForm>  
-        <h1 className="text-white">Sign In</h1>
+        <h1 className="text-black">Sign In</h1>
         <Wrapper>
           <Label text="Username"/>
           <Input placeholder="Username"/>

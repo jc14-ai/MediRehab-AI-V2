@@ -5,6 +5,6 @@ type ButtonProps = {
 
 export default function Button({text, event}:ButtonProps){
     return (
-        <button className="" onSubmit={event}>{text}</button>
+        <button className="text-black border-1 border-black rounded-4xl w-[100px]" onSubmit={event}>{text}</button>
     );
 }

@@ -9,9 +9,49 @@ type isVisibleProps = {
     doctorList:boolean;
 }
 
+type patient = {
+    name:string;
+}
+
+// type doctor = {
+//     name:string;
+//     patients:patient[];
+// }
+
+const doctorList = [
+    {   
+        name:"Karl Crespo",
+        patients:[
+            {name:"John Xerxes"},
+            {name:"Edwin Squarepants"}
+        ]
+    },
+    {   
+        name:"Karl Crespo 2", 
+        patients:[
+            {name:"John Xerxes 2"},
+            {name:"Edwin Squarepants 2"}
+        ]
+    },
+    {   
+        name:"Karl Crespo 3", 
+        patients:[
+            {name:"John Xerxes 3"},
+            {name:"Edwin Squarepants 3"}
+        ]
+    }
+]
+
 export default function Admin(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
+    const [isPatientListVisible, setIsPatientListVisible] =useState<boolean>(false);
+    const [patients, setPatients] = useState<patient[]>([]);
+
+    const showPatients = (visible:boolean, patients:any[]) =>{
+        setIsPatientListVisible(visible)
+        setPatients(patients)
+    }
     return(
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
@@ -60,9 +100,21 @@ export default function Admin(){
                     </div>
                 </div>
             </div>
-            <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} bg-gray-200 w-full h-full`}>
-                <h1>registered doctor list</h1>
-
+            <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} items-center flex-col bg-gray-200 w-full h-full`}>
+                {doctorList.map(doctor => 
+                    <div className="flex flex-row items-center p-2 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" 
+                    onClick={() => showPatients(true,doctor['patients'])}>
+                        {doctor['name']}
+                    </div> 
+                )}
+                <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center absolute inset-0 bg-black/50`} 
+                onClick={() => showPatients(false, [])}>
+                    <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-2">
+                        {patients.map(patient => 
+                        <div className="flex items-center bg-blue-200 mb-2 rounded-2xl w-full h-[40px] p-2 hover:bg-blue-100 hover:cursor-pointer duration-200">{patient['name']}</div>
+                        )}
+                    </div>
+                </div>
             </div>
         </Content>
     );

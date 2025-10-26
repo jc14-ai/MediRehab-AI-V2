@@ -144,17 +144,93 @@ export default function Admin(){
                 </span>
             </div>
 
+            {/* REGISTER DOTOR */}
             <div className={ `${isVisible['registerDoctor'] ? 'flex': 'hidden'} justify-center items-center bg-gray-200 w-full h-full`}>
                 <button className="bg-blue-50 rounded-[100px] w-[100px] h-[100px] border border-blue-50 hover:bg-white hover:border-blue-300 hover:cursor-pointer duration-200" onClick={() => setIsDescriptionVisible(true)}>
                     Add
                 </button>
-                <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`} onClick={() => setIsDescriptionVisible(false)}>
-                    <div className="flex justify-center items-start bg-gray-200 w-[500px] h-[650px] rounded-2xl p-3">
-                        <h1 className="text-[1.2em]">Doctor Description</h1>
-                    </div>
+                <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`}>
+                    <form className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
+                        <span className="h-[90px] w-fit mb-4">
+                            <h1 className="text-2xl mb-2 font-bold">Register New Doctor</h1>
+                            <h1 className="text-gray-500">Fill in the doctor's information below. All fields are required.</h1>
+                        </span>
+                        <div className="flex flex-col w-full">
+                            <h1 className="text-xl mb-4">Personal Information</h1>
+                            <span className="flex flex-col h-fit w-full mb-4">
+                                <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
+                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                            </span>
+                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
+                                <span className="flex flex-col h-fit w-full">
+                                    <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
+                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
+                                </span>
+                                <span className="flex flex-col h-fit w-full">
+                                    <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
+                                    <select className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </span>
+                            </div>
+                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
+                                <span className="flex flex-col h-fit w-full">
+                                    <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
+                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
+                                </span>
+                                <span className="flex flex-col h-fit w-full">
+                                    <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
+                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
+                                </span>
+                            </div>
+                            <span className="flex flex-col h-fit w-full mb-4">
+                                <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
+                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
+                            </span>
+                            <span className="flex flex-col h-fit w-full mb-4">
+                                <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
+                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
+                            </span>
+                            <div className="w-full border-t border-gray-300 pt-5">
+                                <h1 className="text-xl mb-4">Account Information</h1>
+
+                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
+                                    <span className="flex flex-col h-fit w-full">
+                                        <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
+                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
+                                    </span>
+                                    <span className="flex flex-col h-fit w-full">
+                                        <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
+                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
+                                    </span>
+                                </div>
+                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
+                                    <span className="flex flex-col h-fit w-full">
+                                        <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
+                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
+                                    </span>
+                                    <span className="flex flex-col h-fit w-full">
+                                        <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
+                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
+                                    </span>
+                                </div>
+                                <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
+                                    <input className="border border-gray-300 rounded-xl p-3 text-gray-700 text-[0.9em] w-[80px] hover:bg-blue-400 hover:text-white hover:cursor-pointer duration-200" value="Cancel" 
+                                    onClick={() => setIsDescriptionVisible(false)} type="button"/>
+                                    <button className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200"  type="submit">
+                                        Register Doctor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
 
+            {/* REGISTERED DOCTOR LIST */}
             <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} items-center flex-col bg-gray-200 w-full h-full`}>
                 {doctorList.map(doctor => 
                     <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >

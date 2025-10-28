@@ -236,7 +236,7 @@ export default function Admin(){
                     <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >
                         <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['name']}</h1>
                         <div className="w-fit">
-                            <button className="text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2" 
+                            <button className={`${doctor['patients'].length == 0 ? 'hidden' : ''} text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
                             onClick={() => showPatients(true,doctor['patients'])}>
                                 View Patients
                             </button>

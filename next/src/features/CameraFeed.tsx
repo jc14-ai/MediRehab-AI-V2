@@ -2,10 +2,10 @@
 import { useEffect, useRef } from "react";
 
 type CameraFeedProps = {
-  visibility:boolean;
+  visibility: boolean;
 }
 
-export default function CameraFeed({visibility}:CameraFeedProps) {
+export default function CameraFeed({ visibility }: CameraFeedProps) {
   // Tell TypeScript this ref is for an HTMLVideoElement
   const videoRef = useRef<HTMLVideoElement | null>(null);
 

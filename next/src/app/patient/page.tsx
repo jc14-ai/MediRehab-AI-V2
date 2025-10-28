@@ -92,7 +92,7 @@ export default function Patient() {
                         <CameraFeed visibility={true} />
                         <div className="flex flex-row gap-5 p-5">
                             <button className="bg-gray-700 text-white rounded-4xl p-2 w-[100px] hover:bg-gray-600 hover:cursor-pointer duration-200"
-                            onClick={() => setRecordMode(false)}>
+                            onClick={() => displayRecord(false,true)}>
                                 cancel
                             </button>
                             <button className="bg-blue-600 text-white rounded-4xl p-2 w-[100px] hover:bg-blue-500 hover:cursor-pointer duration-200" 

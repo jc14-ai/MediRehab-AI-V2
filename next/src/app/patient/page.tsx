@@ -73,24 +73,24 @@ export default function Patient() {
                 )}
 
                 <div className={`${showDescription ? 'flex' : 'hidden'} justify-center items-center inset-0 fixed bg-black/50`}>
-                    <div className="flex flex-col justify-center items-center bg-gray-50 w-[1200px] h-[700px] rounded-2xl">
+                    <div className="flex flex-col justify-center items-center bg-gray-50 w-[1200px] h-[700px] rounded-2xl p-5">
                         <button className="bg-gray-700 text-white rounded-4xl p-2 w-[100px] hover:bg-gray-600 hover:cursor-pointer duration-200"
                             onClick={() => displayExercise(false, "", 0)}>
                             close
                         </button>
-                        <p>{description}</p>
+                        <p className="text-justify">{description}</p>
                         <button className="bg-red-600 text-white rounded-4xl p-2 w-[100px] hover:bg-red-500 hover:cursor-pointer duration-200" 
                         onClick={() => displayRecord(true,false)}>
                             Record
                         </button>
-                        <h1>{score}</h1>
+                        <h1 className="flex justify-center items-center bg-green-600 text-white rounded-xl p-2 w-[100px] text-xl">{score}</h1>
                     </div>
                 </div>
 
                 <div className={`${recordMode ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
                     <div className="flex flex-col justify-center items-center bg-gray-50 w-[1200px] h-[700px] rounded-2xl">
                         <CameraFeed visibility={true} />
-                        <div className="">
+                        <div className="flex flex-row gap-5 p-5">
                             <button className="bg-gray-700 text-white rounded-4xl p-2 w-[100px] hover:bg-gray-600 hover:cursor-pointer duration-200"
                             onClick={() => setRecordMode(false)}>
                                 cancel

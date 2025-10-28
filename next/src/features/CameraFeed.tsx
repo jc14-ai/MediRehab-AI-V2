@@ -34,12 +34,12 @@ export default function CameraFeed({ visibility }: CameraFeedProps) {
   }, []);
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
+    <div className="flex justify-center items-center h-full w-full p-5">
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        className="rounded-xl shadow-lg w-[400px] h-[300px]"
+        className="rounded-xl shadow-lg h-full"       
       />
     </div>
   );

@@ -37,6 +37,7 @@ export default function Doctor(){
     const [showNotes, setShowNotes] = useState<boolean>(false);
     const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
     const [showTasks, setShowTasks] = useState<boolean>(false);
+    const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
 
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
@@ -101,10 +102,48 @@ export default function Doctor(){
                             </span>
                             <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
                                 {/* Make this dynamically append inside this div */}
-                                <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
+                                <div className="flex justify-between items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
                                     <h1 className="">Tasks Name</h1>
+                                    <span className="flex flex-row items-center gap-2 text-[0.8em]">
+                                        <button className="bg-green-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-green-300 duration-200" 
+                                        onClick={() => {
+                                            setShowTasks(false);
+                                            setShowEvaluation(true);
+                                            }}>
+                                            Evaluation
+                                        </button>
+                                        <button className="bg-red-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-red-300 duration-200" 
+                                        onClick={() => console.log("Task removed")}>
+                                            Remove
+                                        </button>
+                                    </span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className={`${showEvaluation ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
+                        <div className="flex flex-col bg-gray-50 w-[1000px] h-[700px] p-4 rounded-2xl">
+                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
+                                <h1 className="text-xl font-bold">Evaluation</h1>
+                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
+                                onClick={() => {
+                                    setShowTasks(true);
+                                    setShowEvaluation(false);
+                                    }}>
+                                </button>
+                            </span>
+                            <div className="flex justify-evenly items-center w-full h-[400px] bg-blue-100 rounded-2xl mt-2 p-4 mb-5">
+                                {/* Make this dynamically append inside this div */}
+                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
+                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
+                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
+                            </div>
+                            <h1>Feedback</h1>
+                            <span className="flex flex-col justify-end w-full">
+                                <textarea className="resize-none rounded-2xl p-3 focus:outline-none border border-gray-300"/>
+                                <button>Send</button>
+                            </span>
                         </div>
                     </div>
 

@@ -36,6 +36,7 @@ export default function Doctor(){
     const [showExercises, setShowExercises] = useState<boolean>(false);
     const [showNotes, setShowNotes] = useState<boolean>(false);
     const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
+    const [showTasks, setShowTasks] = useState<boolean>(false);
 
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
@@ -61,23 +62,50 @@ export default function Doctor(){
                     </h1>
                     <div className="flex flex-col items-center w-full h-full p-5">
                         {patients.map(patient => 
-                        <div className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200">
+                        <div className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
+                        onClick={() => setShowTasks(true)}>
                             <h1>{patient['name']}</h1>
                             <span className="flex items-center gap-2">
                                 <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
-                                onClick={() => setShowNotes(true)}>
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotes(true);
+                                    }}>
                                     Notes
                                 </button>
                                 <button className="text-[0.9em] bg-gray-100 rounded-4xl p-2 w-[110px] hover:bg-gray-50 cursor-pointer duration-200" 
-                                onClick={() => setShowExercises(true)}>
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowExercises(true);
+                                    }}>
                                     Assign Task
                                 </button>
-                                <button className="text-[0.9em] bg-red-200 rounded-4xl p-2 w-[110px] hover:bg-red-100 cursor-pointer duration-200">
+                                <button className="text-[0.9em] bg-red-200 rounded-4xl p-2 w-[110px] hover:bg-red-100 cursor-pointer duration-200" 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    }}>
                                     Remove
                                 </button>
                             </span>
                         </div>
                         )}
+                    </div>
+
+                    <div className={`${showTasks ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
+                        <div className="flex flex-col bg-gray-50 w-[500px] h-[400px] p-4 rounded-2xl">
+                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
+                                <h1 className="text-xl font-bold">Tasks</h1>
+                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
+                                onClick={() => setShowTasks(false)}>
+                                </button>
+                            </span>
+                            <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
+                                {/* Make this dynamically append inside this div */}
+                                <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
+                                    <h1 className="">Tasks Name</h1>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className={`${showNotes ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
@@ -118,6 +146,7 @@ export default function Doctor(){
                                 </button>
                             </span>
                             <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
+                                {/* Make this dynamically append inside this div */}
                                 <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
                                     <h1 className="">Exercise Name</h1>
                                 </div>

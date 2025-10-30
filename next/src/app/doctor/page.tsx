@@ -139,10 +139,10 @@ export default function Doctor(){
                                 <img className="bg-black rounded-2xl w-[250px] h-full"/>
                                 <img className="bg-black rounded-2xl w-[250px] h-full"/>
                             </div>
-                            <h1>Feedback</h1>
-                            <span className="flex flex-col justify-end w-full">
-                                <textarea className="resize-none rounded-2xl p-3 focus:outline-none border border-gray-300"/>
-                                <button>Send</button>
+                            <h1 className="mb-1 font-bold">Feedback</h1>
+                            <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300"/>
+                            <span className="flex flex-col justify-end items-end w-full mt-3">    
+                                <button className="bg-blue-500 text-white rounded-4xl w-[100px] h-[35px] cursor-pointer hover:bg-blue-400 duration-200">Send</button>
                             </span>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import Content from "@/features/layout/Content";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type isVisibleProps = {
     dashboard:boolean;
@@ -93,6 +93,19 @@ export default function Admin(){
     const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false);
     const [havePatients, setHavePatients] = useState<boolean>(true);
     const [patientDesc, setPatientDesc] = useState<patient>();
+    const [doctors, setDoctors] = useState<any[]>();
+
+    useEffect(() =>{
+        const listDoctors = async () => {
+            const res = await fetch('/api/users');
+            const users = await res.json();
+            setDoctors(users);
+        }
+        
+        listDoctors();
+    },[]);
+
+
 
     const showPatients = (visible:boolean, patients:any[]) =>{
         setIsPatientListVisible(visible);
@@ -232,14 +245,14 @@ export default function Admin(){
 
             {/* REGISTERED DOCTOR LIST */}
             <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} items-center flex-col bg-gray-200 w-full h-full`}>
-                {doctorList.map(doctor => 
+                {doctors?.map(doctor => 
                     <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >
                         <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['name']}</h1>
                         <div className="w-fit">
-                            <button className={`${doctor['patients'].length == 0 ? 'hidden' : ''} text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
+                            {/* <button className={`${doctor['patients'].length == 0 ? 'hidden' : ''} text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
                             onClick={() => showPatients(true,doctor['patients'])}>
                                 View Patients
-                            </button>
+                            </button> */}
                             <button className="text-[0.8em] bg-red-400 text-white rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-red-300 duration-200" onClick={() => displayDoctorDeletion(doctor['patients'], true)}>
                                 Unregister
                             </button>

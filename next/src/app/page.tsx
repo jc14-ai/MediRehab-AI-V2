@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
 
+  const authenticate = () => {
+    
+  }
+
   return (
     <div className="flex flex-col justify-center items-center h-screen w-screen bg-blue-100">
       <form className="flex justify-evenly items-center flex-col bg-gray-50 w-[400px] h-[400px] rounded-xl p-5" action="" method="POST"> 

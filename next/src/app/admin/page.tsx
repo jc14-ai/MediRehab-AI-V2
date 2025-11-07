@@ -95,15 +95,15 @@ export default function Admin(){
     const [patientDesc, setPatientDesc] = useState<patient>();
     const [doctors, setDoctors] = useState<any[]>();
 
-    useEffect(() =>{
-        const listDoctors = async () => {
-            const res = await fetch('/api/users');
-            const users = await res.json();
-            setDoctors(users);
-        }
+    // useEffect(() =>{
+    //     const listDoctors = async () => {
+    //         const res = await fetch('/api/users');
+    //         const users = await res.json();
+    //         setDoctors(users);
+    //     }
         
-        listDoctors();
-    },[]);
+    //     listDoctors();
+    // },[]);
 
 
 

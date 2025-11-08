@@ -95,6 +95,18 @@ export default function Admin(){
     const [patientDesc, setPatientDesc] = useState<patient>();
     const [doctors, setDoctors] = useState<any[]>();
 
+    const [fullName, setFullName] = useState<string>("");
+    const [birthDate, setBirthDate] = useState<string>("");
+    const [gender, setGender] = useState<string>("");
+    const [contact, setContact] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [address, setAddress] = useState<string>("");
+    const [profilePic, setProfilePic] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [registrationDate, setRegistrationDate] = useState<string>("");
+    const [role, setRole] = useState<string>("");
+
     // useEffect(() =>{
     //     const listDoctors = async () => {
     //         const res = await fetch('/api/users');
@@ -172,16 +184,16 @@ export default function Admin(){
                             <h1 className="text-xl mb-4">Personal Information</h1>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                                <input onChange={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
                             </span>
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
+                                    <input onChange={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
+                                    <select onSelect={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -233,7 +245,7 @@ export default function Admin(){
                                 <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
                                     <input className="border border-gray-300 rounded-xl p-3 text-gray-700 text-[0.9em] w-[80px] hover:bg-blue-400 hover:text-white hover:cursor-pointer duration-200" value="Cancel" 
                                     onClick={() => setIsDescriptionVisible(false)} type="button"/>
-                                    <button className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200"  type="submit">
+                                    <button type="submit" className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200">
                                         Register Doctor
                                     </button>
                                 </div>

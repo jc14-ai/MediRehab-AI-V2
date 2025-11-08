@@ -107,6 +107,22 @@ export default function Admin(){
     const [registrationDate, setRegistrationDate] = useState<string>("");
     const [role, setRole] = useState<string>("");
 
+    const registerDoctor = async () => {
+        const res = await fetch("/api/admin/register", {
+            method: "POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({
+                fullName,birthDate,gender,
+                contact,email,address,
+                profilePic,username,password,
+                registrationDate,role
+            })
+        })
+        const data = res.json();
+
+
+    }
+
     // useEffect(() =>{
     //     const listDoctors = async () => {
     //         const res = await fetch('/api/users');
@@ -175,7 +191,7 @@ export default function Admin(){
                     Add
                 </button>
                 <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`}>
-                    <form className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
+                    <form onSubmit={registerDoctor} className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
                         <span className="h-[90px] w-fit mb-4">
                             <h1 className="text-2xl mb-2 font-bold">Register New Doctor</h1>
                             <h1 className="text-gray-500">Fill in the doctor's information below. All fields are required.</h1>
@@ -184,16 +200,16 @@ export default function Admin(){
                             <h1 className="text-xl mb-4">Personal Information</h1>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input onChange={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                                <input onChange={(e) => setFullName(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
                             </span>
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input onChange={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
+                                    <input onChange={(e) => setBirthDate(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select onSelect={() => console.log("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
+                                    <select onSelect={(e) => setGender("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -204,20 +220,20 @@ export default function Admin(){
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
+                                    <input onChange={(e) => setContact(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
+                                    <input onChange={(e) => setEmail(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
                                 </span>
                             </div>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
+                                <input onChange={(e) => setAddress(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
                             </span>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
+                                <input onChange={(e) => setProfilePic(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
                             </span>
                             <div className="w-full border-t border-gray-300 pt-5">
                                 <h1 className="text-xl mb-4">Account Information</h1>
@@ -225,21 +241,21 @@ export default function Admin(){
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
-                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
+                                        <input onChange={(e) => setUsername(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
-                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
+                                        <input onChange={(e) => setPassword(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
                                     </span>
                                 </div>
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
+                                        <input onChange={(e) => setRegistrationDate(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
+                                        <input onChange={(e) => setRole(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
                                     </span>
                                 </div>
                                 <div className="flex flex-row justify-end items-center w-full h-fit gap-4">

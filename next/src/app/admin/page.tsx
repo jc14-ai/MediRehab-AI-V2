@@ -9,22 +9,6 @@ type isVisibleProps = {
     doctorList:boolean;
 }
 
-type patient = {
-    name:string;
-    birth:string;
-    gender:string;
-    contactNumber:string;
-    email:string;
-    address:string;
-    profilePhoto:string;
-    registrationDate:string;
-}
-
-// type doctor = {
-//     name:string;
-//     patients:patient[];
-// }
-
 const doctorList = [
     {   
         name:"Karl Crespo",
@@ -99,14 +83,31 @@ type doctorProps = {
     role?:string;
 }
 
+type patientProps = {
+    patient: {
+        account: {
+            registration_date: Date;
+        };
+        gender: 'male' | 'female' | 'other';
+        contact: number;
+        email: string;
+        address: string;
+        full_name: string;
+        birth_date: Date;
+        account_id: number;
+    };
+    patient_id: number;
+    notes: string | null;
+}
+
 export default function Admin(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
     const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false);
-    const [patients, setPatients] = useState<patient[]>([]);
+    const [patients, setPatients] = useState<patientProps[]>([]);
     const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false);
     const [havePatients, setHavePatients] = useState<boolean>(true);
-    const [patientDesc, setPatientDesc] = useState<patient>();
+    const [patientDesc, setPatientDesc] = useState<patientProps>();
     const [doctors, setDoctors] = useState<any[]>();
     const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
 
@@ -146,17 +147,26 @@ export default function Admin(){
         }
     }
 
-    const listPatients = async () => {
+    const listPatients = async (visible:boolean, accountId:string) => {
+        const res = await fetch("/api/admin/list_patient", {
+            method:"POST",
+            headers:{"Content-Type": "application/json"},
+            body:JSON.stringify({id:accountId})
+        })
 
+        const data = await res.json();
+
+        setPatients(data);
+        setIsPatientListVisible(visible);
     }
 
     useEffect(()=>{
         listDoctors();
     }, [])
 
-    const showPatients = (visible:boolean, patients:any[]) =>{
+    const showPatients = (visible:boolean) =>{
         setIsPatientListVisible(visible);
-        setPatients(patients);
+        setPatients([]);
     }
 
     const displayDoctorDeletion = (patients:any[], visibility:boolean) => {
@@ -296,10 +306,10 @@ export default function Admin(){
                     <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >
                         <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['full_name']}</h1>
                         <div className="w-fit">
-                            {/* <button className={`${doctor['patients'].length == 0 ? 'hidden' : ''} text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
-                            onClick={() => showPatients(true,doctor['patients'])}>
+                            <button className={`text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
+                            onClick={() => listPatients(true, doctor['doctor_id'])}>
                                 View Patients
-                            </button> */}
+                            </button>
                             <button className="text-[0.8em] bg-red-400 text-white rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-red-300 duration-200" onClick={() => displayDoctorDeletion(doctor['patients'], true)}>
                                 Unregister
                             </button>
@@ -307,11 +317,11 @@ export default function Admin(){
                     </div> 
                 )}
                 <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center absolute inset-0 bg-black/50`} 
-                onClick={() => showPatients(false, [])}>
+                onClick={() => showPatients(false)}>
                     <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-2">
                         {patients.map(patient => 
                         <div className="flex justify-between items-center bg-blue-200 mb-2 rounded-2xl w-full h-[40px] p-2 pl-4 pr-4 hover:bg-blue-100 hover:cursor-pointer duration-200">
-                            <h1 className="bg-gray-50 rounded-4xl pl-3 pr-4">{patient['name']}</h1>
+                            <h1 className="bg-gray-50 rounded-4xl pl-3 pr-4">{patient['patient']['full_name']}</h1>
                             <button className="text-[0.8em] bg-gray-100 rounded-4xl p-1 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200" 
                             onClick={() => setPatientDesc(patient)}>
                                 View
@@ -334,15 +344,14 @@ export default function Admin(){
                 */}
 
                 {patientDesc ? 
-                <div className={`${patientDesc['name'] ? 'flex': 'hidden'} justify-center items-center bg-black/50 absolute inset-0`} 
-                onClick={() => setPatientDesc({name:"",address:"",birth:"",contactNumber:"",email:"",gender:"",profilePhoto:"",registrationDate:""})}>
+                <div className={`${patientDesc['patient']['full_name'] ? 'flex': 'hidden'} justify-center items-center bg-black/50 absolute inset-0`} >
                     <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4">
                         <h1 className="text-2xl font-bold">Patient Information</h1>
                         <div className="flex flex-row items-center w-full h-[140px] p-2 border-b border-gray-300">
                             <img src='/zild.jpg'className="h-[100px] w-[100px] rounded-[150px] object-cover border border-blue-100"/>
                             <span className="ml-2 h-fit w-fit">
-                                <h1 className="text-xl font-bold">{patientDesc['name']}</h1>
-                                <h1 className="text-gray-700">{patientDesc['gender']}</h1>
+                                <h1 className="text-xl font-bold">{patientDesc['patient']['full_name']}</h1>
+                                <h1 className="text-gray-700">{patientDesc['patient']['gender']}</h1>
                             </span>
                         </div>
                         <div className="flex flex-col w-full h-full pt-4 gap-4">
@@ -350,35 +359,35 @@ export default function Admin(){
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Date of Birth</h1>
-                                    <h1>{patientDesc['birth']}</h1>
+                                    <h1>{patientDesc['patient']['birth_date'].toISOString().split("T")[0]}</h1>
                                 </span>
                             </div>
                             <div className="flex flex-row">
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Email Address</h1>
-                                    <h1>{patientDesc['email']}</h1>
+                                    <h1>{patientDesc['patient']['email']}</h1>
                                 </span>
                             </div>
                             <div className="flex flex-row">
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Contact Number</h1>
-                                    <h1>{patientDesc['contactNumber']}</h1>
+                                    <h1>{patientDesc['patient']['contact']}</h1>
                                 </span>
                             </div>
                             <div className="flex flex-row">
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Address</h1>
-                                    <h1>{patientDesc['address']}</h1>
+                                    <h1>{patientDesc['patient']['address']}</h1>
                                 </span>
                             </div>
                             <div className="flex flex-row">
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Regitration Date</h1>
-                                    <h1>{patientDesc['registrationDate']}</h1>
+                                    <h1>{patientDesc['patient']['account']['registration_date'].toISOString().split("T")[0]}</h1>
                                 </span>
                             </div>
                         </div>

@@ -41,7 +41,7 @@ model doctor {
   full_name       String            @db.VarChar(100)
   birth_date      DateTime          @db.Date
   gender          gender            @default(male)
-  contact         Int               @unique
+  contact         String            @unique
   email           String            @unique @db.VarChar(100)
   address         String            @db.VarChar(100)
   account         account           @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction)
@@ -86,7 +86,7 @@ model patient {
   full_name       String            @db.VarChar(100)
   birth_date      DateTime          @db.Date
   gender          gender            @default(male)
-  contact         Int               @unique
+  contact         String            @unique
   email           String            @unique @db.VarChar(100)
   address         String            @db.VarChar(100)
   assign          assign[]

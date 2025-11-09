@@ -1,7 +1,7 @@
 'use client'
 
 import Content from "@/features/layout/Content";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type isVisibleProps = {
     dashboard:boolean;
@@ -85,6 +85,21 @@ const doctorList = [
     }
 ]
 
+type doctorProps = {
+    accountId?:string;
+    fullname?:string;
+    birthDate?:string;
+    gender?:string;
+    contact?:string;
+    email?:string;
+    address?:string;
+    profilePic?:string;
+    username?:string;
+    password?:string;
+    registrationDate?:string;
+    role?:string;
+}
+
 export default function Admin(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
@@ -94,46 +109,47 @@ export default function Admin(){
     const [havePatients, setHavePatients] = useState<boolean>(true);
     const [patientDesc, setPatientDesc] = useState<patient>();
     const [doctors, setDoctors] = useState<any[]>();
+    const [doctor, setDoctor] = useState<doctorProps>({role:"doctor", registrationDate: "2025-11-11"});
 
-    const [fullName, setFullName] = useState<string>("");
-    const [birthDate, setBirthDate] = useState<string>("");
-    const [gender, setGender] = useState<string>("");
-    const [contact, setContact] = useState<string>("");
-    const [email, setEmail] = useState<string>("");
-    const [address, setAddress] = useState<string>("");
-    const [profilePic, setProfilePic] = useState<string>("");
-    const [username, setUsername] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [registrationDate, setRegistrationDate] = useState<string>("");
-    const [role, setRole] = useState<string>("");
-
-    const registerDoctor = async () => {
-        const res = await fetch("/api/admin/register", {
-            method: "POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({
-                fullName,birthDate,gender,
-                contact,email,address,
-                profilePic,username,password,
-                registrationDate,role
+    const registerDoctor = async (e:FormEvent) => {
+        e.preventDefault();
+        try{
+            const res = await fetch("/api/admin/register_doctor", {
+                method: "POST",
+                headers:{"Content-Type":"application/json"},
+                body: JSON.stringify(doctor)
             })
-        })
-        const data = res.json();
+            const data = await res.json();
 
-
+            if (data) {
+                setIsDescriptionVisible(false);
+                listDoctors();
+            } else{
+                console.log("there is problem in doctor registration!");
+            }
+        }catch(err){
+            console.error(err)  
+        }
     }
 
-    // useEffect(() =>{
-    //     const listDoctors = async () => {
-    //         const res = await fetch('/api/users');
-    //         const users = await res.json();
-    //         setDoctors(users);
-    //     }
-        
-    //     listDoctors();
-    // },[]);
+    const listDoctors = async () => {
+        try{
+            const res = await fetch('/api/admin/register_doctor');
+            const data = await res.json();
 
+            if (data){
+                setDoctors(data);
+            }else{
+                console.log("doctor's list is empty!");
+            }
+        }catch(err){
+            console.error(err)
+        }
+    }
 
+    useEffect(()=>{
+        listDoctors();
+    }, [])
 
     const showPatients = (visible:boolean, patients:any[]) =>{
         setIsPatientListVisible(visible);
@@ -200,16 +216,16 @@ export default function Admin(){
                             <h1 className="text-xl mb-4">Personal Information</h1>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input onChange={(e) => setFullName(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                                <input onChange={(e) => setDoctor({...doctor, fullname:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
                             </span>
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input onChange={(e) => setBirthDate(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
+                                    <input onChange={(e) => setDoctor({...doctor, birthDate:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select onSelect={(e) => setGender("")} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
+                                    <select onChange={(e) => setDoctor({...doctor, gender:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -220,20 +236,20 @@ export default function Admin(){
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
-                                    <input onChange={(e) => setContact(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
+                                    <input onChange={(e) => setDoctor({...doctor, contact:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
-                                    <input onChange={(e) => setEmail(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
+                                    <input onChange={(e) => setDoctor({...doctor, email:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
                                 </span>
                             </div>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
-                                <input onChange={(e) => setAddress(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
+                                <input onChange={(e) => setDoctor({...doctor, address:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
                             </span>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
-                                <input onChange={(e) => setProfilePic(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
+                                <input onChange={(e) => setDoctor({...doctor, profilePic:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
                             </span>
                             <div className="w-full border-t border-gray-300 pt-5">
                                 <h1 className="text-xl mb-4">Account Information</h1>
@@ -241,21 +257,21 @@ export default function Admin(){
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
-                                        <input onChange={(e) => setUsername(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
+                                        <input onChange={(e) => setDoctor({...doctor, username:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
-                                        <input onChange={(e) => setPassword(e.target.value)} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
+                                        <input onChange={(e) => setDoctor({...doctor, password:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
                                     </span>
                                 </div>
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input onChange={(e) => setRegistrationDate(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
+                                        <input onChange={(e) => setDoctor({...doctor, registrationDate:e.target.value})} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
-                                        <input onChange={(e) => setRole(e.target.value)} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
+                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
                                     </span>
                                 </div>
                                 <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
@@ -275,7 +291,7 @@ export default function Admin(){
             <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} items-center flex-col bg-gray-200 w-full h-full`}>
                 {doctors?.map(doctor => 
                     <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >
-                        <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['name']}</h1>
+                        <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['full_name']}</h1>
                         <div className="w-fit">
                             {/* <button className={`${doctor['patients'].length == 0 ? 'hidden' : ''} text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
                             onClick={() => showPatients(true,doctor['patients'])}>

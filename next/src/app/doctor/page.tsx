@@ -1,7 +1,7 @@
 'use client'
 
 import Content from "@/features/layout/Content";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 
 type isVisibleProps = {
     dashboard:boolean;
@@ -31,6 +31,20 @@ const patients = [
             }
         ]
 
+type patientProps = {
+    accountId?:string;
+    fullname?:string;
+    birthDate?:string;
+    gender?:string;
+    contact?:string;
+    email?:string;
+    address?:string;
+    profilePic?:string;
+    username?:string;
+    password?:string;
+    role?:string;
+}
+
 export default function Doctor(){
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
     const [showExercises, setShowExercises] = useState<boolean>(false);
@@ -39,6 +53,44 @@ export default function Doctor(){
     const [showTasks, setShowTasks] = useState<boolean>(false);
     const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [patient, setPatient] = useState<patientProps>({role:"patient"});
+
+    const registerPatient = async (e:FormEvent) => {
+            e.preventDefault();
+            try{
+                const res = await fetch("/api/doctor/register_patient", {
+                    method: "POST",
+                    headers:{"Content-Type":"application/json"},
+                    body: JSON.stringify(patient)
+                })
+                const data = await res.json();
+    
+                if (data) {
+                    setIsDescriptionVisible(false);
+                    listPatients();
+                } else{
+                    console.log("there is problem in patient registration!");
+                }
+            }catch(err){
+                console.error(err)  
+            }
+        }
+    
+        const listPatients = async () => {
+            try{
+                const res = await fetch('/api/doctor/register_patient');
+                const data = await res.json();
+    
+                if (data){
+                    setPatients(data);
+                }else{
+                    console.log("patient's list is empty!");
+                }
+            }catch(err){
+                console.error(err)
+            }
+        }
 
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
@@ -66,7 +118,7 @@ export default function Doctor(){
                         {patients.map(patient => 
                         <div className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
                         onClick={() => setShowTasks(true)}>
-                            <h1>{patient['name']}</h1>
+                            <h1>{patient['full_name']}</h1>
                             <span className="flex items-center gap-2">
                                 <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
                                 onClick={(e) => {
@@ -202,7 +254,7 @@ export default function Doctor(){
                     Add
                 </button>
                 <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`}>
-                    <form className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
+                    <form onSubmit={registerPatient} className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
                         <span className="h-[90px] w-fit mb-4">
                             <h1 className="text-2xl mb-2 font-bold">Register New Patient</h1>
                             <h1 className="text-gray-500">Fill in the patient's information below. All fields are required.</h1>
@@ -211,16 +263,16 @@ export default function Doctor(){
                             <h1 className="text-xl mb-4">Personal Information</h1>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                                <input onChange={(e) => setPatient({...patient, fullname:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
                             </span>
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
+                                    <input onChange={(e) => setPatient({...patient, birthDate:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
+                                    <select onChange={(e) => setPatient({...patient, gender:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
                                         <option value="">Select gender</option>
                                         <option value="male">Male</option>
                                         <option value="female">Female</option>
@@ -231,20 +283,20 @@ export default function Doctor(){
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
+                                    <input onChange={(e) => setPatient({...patient, contact:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
                                 </span>
                                 <span className="flex flex-col h-fit w-full">
                                     <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
-                                    <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
+                                    <input onChange={(e) => setPatient({...patient, email:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
                                 </span>
                             </div>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
+                                <input onChange={(e) => setPatient({...patient, address:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
                             </span>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
-                                <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
+                                <input onChange={(e) => setPatient({...patient, profilePic:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
                             </span>
                             <div className="w-full border-t border-gray-300 pt-5">
                                 <h1 className="text-xl mb-4">Account Information</h1>
@@ -252,17 +304,17 @@ export default function Doctor(){
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
-                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
+                                        <input onChange={(e) => setPatient({...patient, username:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
-                                        <input className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
+                                        <input onChange={(e) => setPatient({...patient, password:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
                                     </span>
                                 </div>
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
+                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value={`${new Date().toISOString().split("T")[0]}`} disabled required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
@@ -272,7 +324,7 @@ export default function Doctor(){
                                 <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
                                     <input className="border border-gray-300 rounded-xl p-3 text-gray-700 text-[0.9em] w-[80px] hover:bg-blue-400 hover:text-white hover:cursor-pointer duration-200" value="Cancel" 
                                     onClick={() => setIsDescriptionVisible(false)} type="button"/>
-                                    <button className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200"  type="submit">
+                                    <button type="submit" className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200">
                                         Register Patient
                                     </button>
                                 </div>

@@ -96,7 +96,6 @@ type doctorProps = {
     profilePic?:string;
     username?:string;
     password?:string;
-    registrationDate?:string;
     role?:string;
 }
 
@@ -109,7 +108,7 @@ export default function Admin(){
     const [havePatients, setHavePatients] = useState<boolean>(true);
     const [patientDesc, setPatientDesc] = useState<patient>();
     const [doctors, setDoctors] = useState<any[]>();
-    const [doctor, setDoctor] = useState<doctorProps>({role:"doctor", registrationDate: "2025-11-11"});
+    const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
 
     const registerDoctor = async (e:FormEvent) => {
         e.preventDefault();
@@ -145,6 +144,10 @@ export default function Admin(){
         }catch(err){
             console.error(err)
         }
+    }
+
+    const listPatients = async () => {
+
     }
 
     useEffect(()=>{
@@ -267,7 +270,7 @@ export default function Admin(){
                                 <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input onChange={(e) => setDoctor({...doctor, registrationDate:e.target.value})} className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value="" disabled required/>
+                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value={`${new Date().toISOString().split("T")[0]}`} disabled required/>
                                     </span>
                                     <span className="flex flex-col h-fit w-full">
                                         <label className="mb-2 text-[0.9em] text-gray-600">Role</label>

@@ -35,7 +35,7 @@ export async function POST(req:Request){
         })
 
         if(account){
-            const newDoctor = await prisma.doctor.create({
+            const newPatient = await prisma.patient.create({
             data:{
                 account_id:account.account_id,
                 full_name:fullname,
@@ -54,15 +54,15 @@ export async function POST(req:Request){
                 }
             })
 
-            if (newDoctor) return NextResponse.json(newDoctor);
+            if (newPatient) return NextResponse.json(newPatient);
         }
     }
     return NextResponse.json({})
 }
 
 export async function GET(){
-    const doctors = await prisma.doctor.findMany();
+    const patients = await prisma.patient.findMany();
 
-    return NextResponse.json(doctors);
+    return NextResponse.json(patients);
 }
 

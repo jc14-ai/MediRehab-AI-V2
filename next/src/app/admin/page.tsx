@@ -86,17 +86,17 @@ type doctorProps = {
 type patientProps = {
     patient: {
         account: {
-            registration_date: Date;
+            registration_date: string;
         };
-        gender: 'male' | 'female' | 'other';
-        contact: number;
+        gender: 'male' | 'female' | 'other' | '';
+        contact: string;
         email: string;
         address: string;
         full_name: string;
-        birth_date: Date;
-        account_id: number;
+        birth_date: string;
+        account_id: string;
     };
-    patient_id: number;
+    patient_id: string;
     notes: string | null;
 }
 
@@ -345,8 +345,9 @@ export default function Admin(){
                 */}
 
                 {patientDesc ? 
-                <div className={`${patientDesc['patient']['full_name'] ? 'flex': 'hidden'} justify-center items-center bg-black/50 absolute inset-0`} >
-                    <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4">
+                <div className={`${patientDesc['patient']['full_name'] ? 'flex': 'hidden'} justify-center items-center bg-black/50 absolute inset-0`} 
+                onClick={() => setPatientDesc({patient_id:"",notes:"",patient:{account:{registration_date:""},account_id:"",address:"",birth_date:"",contact:"",email:"",full_name:"",gender:""}})}>
+                    <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4" onClick={(e) => e.stopPropagation()}>
                         <h1 className="text-2xl font-bold">Patient Information</h1>
                         <div className="flex flex-row items-center w-full h-[140px] p-2 border-b border-gray-300">
                             <img src='/zild.jpg'className="h-[100px] w-[100px] rounded-[150px] object-cover border border-blue-100"/>
@@ -360,7 +361,7 @@ export default function Admin(){
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Date of Birth</h1>
-                                    <h1>{patientDesc['patient']['birth_date'].toISOString().split("T")[0]}</h1>
+                                    <h1>{patientDesc['patient']['birth_date']}</h1>
                                 </span>
                             </div>
                             <div className="flex flex-row">
@@ -388,7 +389,7 @@ export default function Admin(){
                                 <img src="/file.svg" className="w-[25px]"/>
                                 <span className="ml-3">
                                     <h1 className="text-gray-500 text-[0.8em]">Regitration Date</h1>
-                                    <h1>{patientDesc['patient']['account']['registration_date'].toISOString().split("T")[0]}</h1>
+                                    <h1>{patientDesc['patient']['account']['registration_date']}</h1>
                                 </span>
                             </div>
                         </div>

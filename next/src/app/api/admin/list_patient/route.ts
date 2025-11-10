@@ -3,21 +3,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(req:Request){
     const data = await req.json();
-    const { id } = data;
+    const { doctorId } = data;
 
-    const doctor = await prisma.doctor.findFirst({
-        where:{
-            account_id:id
-        },
-        select:{
-            doctor_id:true
-        }
-    });
-
-    if (doctor){
+    if (doctorId){
         const patients = await prisma.doctors_patient.findMany({
         where:{
-            doctor_id: doctor.doctor_id
+            doctor_id: doctorId
         },
         select:{
             patient_id:true,

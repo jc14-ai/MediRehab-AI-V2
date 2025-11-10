@@ -147,11 +147,11 @@ export default function Admin(){
         }
     }
 
-    const listPatients = async (visible:boolean, accountId:string) => {
+    const listPatients = async (visible:boolean, doctorId:string) => {
         const res = await fetch("/api/admin/list_patient", {
             method:"POST",
             headers:{"Content-Type": "application/json"},
-            body:JSON.stringify({id:accountId})
+            body:JSON.stringify({doctorId:doctorId})
         })
 
         const data = await res.json();
@@ -316,6 +316,7 @@ export default function Admin(){
                         </div>
                     </div> 
                 )}
+                {patients.length > 0 ? 
                 <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center absolute inset-0 bg-black/50`} 
                 onClick={() => showPatients(false)}>
                     <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-2">
@@ -329,7 +330,7 @@ export default function Admin(){
                         </div>
                         )}
                     </div>
-                </div>
+                </div> : null}
 
 
                 {/* 

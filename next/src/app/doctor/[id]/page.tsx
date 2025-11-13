@@ -33,8 +33,8 @@ const patients = [
         ]
 
 type patientProps = {
+    fullName?:string;
     accountId?:string;
-    fullname?:string;
     birthDate?:string;
     gender?:string;
     contact?:string;
@@ -44,6 +44,14 @@ type patientProps = {
     username?:string;
     password?:string;
     role?:string;
+}
+
+type patientsProps = {
+    patient_id:string;
+    patient:{
+        full_name:string;
+    }
+    notes:string;
 }
 
 export default function Doctor(){
@@ -60,11 +68,27 @@ export default function Doctor(){
     const [showTasks, setShowTasks] = useState<boolean>(false);
     const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
-    const [patients, setPatients] = useState<any[]>([]);
+    const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
 
     useEffect(() => {
+        const loadPatients = async () => {
+            const res = await fetch("/api/doctor/list_patient",{
+                method:'POST',
+                headers:{"Content-Type": 'application/json'},
+                body: JSON.stringify({id:id})
+            });
 
+            const data = await res.json();
+
+            if (data.success){
+                setPatients(data.patients);
+            }else{
+                setPatients([]);
+            }
+        }
+
+        loadPatients();
     },[]);
 
     const registerPatient = async (e:FormEvent) => {
@@ -84,13 +108,13 @@ export default function Doctor(){
                     console.log("there is problem in patient registration!");
                 }
             }catch(err){
-                console.error(err)  
+                console.error(err);  
             }
         };
     
         const listPatients = async () => {
             try{
-                const res = await fetch('/api/doctor/register_patient');
+                const res = await fetch('/api/doctor/list_patient');
                 const data = await res.json();
     
                 if (data){
@@ -128,9 +152,9 @@ export default function Doctor(){
                     </h1>
                     <div className="flex flex-col items-center w-full h-full p-5">
                         {patients.map(patient => 
-                        <div className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
+                        <div key={patient.patient_id} className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
                         onClick={() => setShowTasks(true)}>
-                            <h1>{patient['full_name']}</h1>
+                            <h1>{patient['patient']['full_name']}</h1>
                             <span className="flex items-center gap-2">
                                 <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
                                 onClick={(e) => {
@@ -275,7 +299,7 @@ export default function Doctor(){
                             <h1 className="text-xl mb-4">Personal Information</h1>
                             <span className="flex flex-col h-fit w-full mb-4">
                                 <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input onChange={(e) => setPatient({...patient, fullname:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
+                                <input onChange={(e) => setPatient({...patient, fullName:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
                             </span>
                             <div className="flex flex-row flex-nowrap gap-4 mb-4">
                                 <span className="flex flex-col h-fit w-full">

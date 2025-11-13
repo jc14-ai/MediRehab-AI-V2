@@ -1,7 +1,8 @@
 'use client'
 
 import Content from "@/features/layout/Content";
-import { FormEvent, useState } from "react";
+import { useParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
 
 type isVisibleProps = {
     dashboard:boolean;
@@ -46,6 +47,12 @@ type patientProps = {
 }
 
 export default function Doctor(){
+
+    const params = useParams<{ id:string }>();
+
+    //GET THE DOCTOR ID HERE
+    const { id } = params;
+
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
     const [showExercises, setShowExercises] = useState<boolean>(false);
     const [showNotes, setShowNotes] = useState<boolean>(false);
@@ -55,6 +62,10 @@ export default function Doctor(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [patients, setPatients] = useState<any[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
+
+    useEffect(() => {
+
+    },[]);
 
     const registerPatient = async (e:FormEvent) => {
             e.preventDefault();
@@ -75,7 +86,7 @@ export default function Doctor(){
             }catch(err){
                 console.error(err)  
             }
-        }
+        };
     
         const listPatients = async () => {
             try{
@@ -90,12 +101,13 @@ export default function Doctor(){
             }catch(err){
                 console.error(err)
             }
-        }
+        };
 
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
+                {id}
                 <div className="flex justify-between items-center w-[17%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
                     onClick={() => setIsVisible({dashboard:true, registerPatient:false})}>

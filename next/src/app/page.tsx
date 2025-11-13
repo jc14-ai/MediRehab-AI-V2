@@ -15,12 +15,12 @@ export default function Home() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username:username, pasword:password })
       })
       const data = await res.json();
-      if (data['role'] === 'admin') router.push('/admin');
-      if (data['role'] === 'doctor') router.push('/doctor');
-      if (data['role'] === 'patient') router.push('/patient');
+      if (data['role'] === 'admin') router.push(`/admin/${data['id']}`);
+      if (data['role'] === 'doctor') router.push(`/doctor/${data['id']}`);
+      if (data['role'] === 'patient') router.push(`/patient/${data['id']}`);
     }catch(err){
       console.error("login error", err)
     }

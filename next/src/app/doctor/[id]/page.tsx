@@ -2,7 +2,7 @@
 
 import Content from "@/features/layout/Content";
 import { useParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type isVisibleProps = {
     dashboard:boolean;
@@ -47,6 +47,7 @@ type patientProps = {
 }
 
 type patientsProps = {
+    doctors_patient_id:string;
     patient_id:string;
     patient:{
         full_name:string;
@@ -64,7 +65,9 @@ export default function Doctor(){
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
     const [showExercises, setShowExercises] = useState<boolean>(false);
     const [showNotes, setShowNotes] = useState<boolean>(false);
+    const [note, setNote] = useState<string>("");
     const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
+    const [selectedPatient, setSelectedPatient] = useState<string>("");
     const [showTasks, setShowTasks] = useState<boolean>(false);
     const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
@@ -123,9 +126,42 @@ export default function Doctor(){
                     console.log("patient's list is empty!");
                 }
             }catch(err){
-                console.error(err)
+                console.error(err);
             }
         };
+
+        const loadNote = async (visibility:boolean, id:string) => {
+            const res = await fetch("/api/doctor/load_note", {
+                method:'POST',
+                headers:{'Content-Type': 'application/json'},
+                body: JSON.stringify({id:id})
+            });
+            const data = await res.json();
+
+            if (data.success){
+                setNote(data.note);
+            }else{
+                setNote("");
+            }
+
+            setShowNotes(visibility);
+        } 
+        
+        const updateNote = async (id:string, note:string) => {
+            const res = await fetch("/api/doctor/update_note", {
+                method:'POST',
+                headers:{'Content-Type': 'application/json'},
+                body: JSON.stringify({id:id,note:note})
+            });
+
+            const data = await res.json();
+
+            if (data.success){
+                setNote(data.note);
+            }else{
+                setNote("");
+            }
+        }
 
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
@@ -159,7 +195,8 @@ export default function Doctor(){
                                 <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setShowNotes(true);
+                                    setSelectedPatient(patient.doctors_patient_id);
+                                    loadNote(true, patient.doctors_patient_id);
                                     }}>
                                     Notes
                                 </button>
@@ -248,6 +285,7 @@ export default function Doctor(){
                                 </button>
                             </span>
                             <textarea className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4 focus:outline-none resize-none" 
+                            value={note} onChange={(e) => setNote(e.target.value)}
                             onFocus={() => setShowUpdateButton(true)}/>
                             <span className={`${showUpdateButton ? 'flex' : 'hidden'} gap-3 mt-3 w-full justify-end items-center`}>
                                 <button className="bg-gray-200 rounded-4xl w-[100px] p-2 cursor-pointer hover:bg-gray-100 duration-200" 
@@ -257,6 +295,7 @@ export default function Doctor(){
                                 <button className="bg-blue-200 rounded-4xl w-[100px] p-2 cursor-pointer hover:bg-blue-100 duration-200" 
                                 onClick={() => {
                                     // add a function that update to db here
+                                    updateNote(selectedPatient, note);
                                     setShowUpdateButton(false);
                                 }}>
                                     Update

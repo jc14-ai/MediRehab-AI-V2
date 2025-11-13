@@ -12,6 +12,7 @@ export async function POST(req:Request){
                 doctor_id: Number(id)
             },
             select:{
+                doctors_patient_id:true,
                 patient_id:true,
                 patient:{
                     select:{

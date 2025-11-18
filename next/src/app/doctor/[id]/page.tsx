@@ -163,11 +163,24 @@ export default function Doctor(){
             }
         }
 
+        const removePatient = async (patientId:string) => {
+            const res = await fetch("/api/doctor/remove_patient",{
+                method:'POST',
+                headers:{'Content-Type': 'application/json'},
+                body: JSON.stringify({patientId:patientId, doctorId:id})
+            })
+            const data = await res.json();
+
+            if(data.success){
+                setPatients(data.patients);
+            }
+            console.log(data.message);
+        }
+
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
-                {id}
                 <div className="flex justify-between items-center w-[17%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
                     onClick={() => setIsVisible({dashboard:true, registerPatient:false})}>
@@ -210,6 +223,7 @@ export default function Doctor(){
                                 <button className="text-[0.9em] bg-red-200 rounded-4xl p-2 w-[110px] hover:bg-red-100 cursor-pointer duration-200" 
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    removePatient(patient['patient_id']);
                                     }}>
                                     Remove
                                 </button>

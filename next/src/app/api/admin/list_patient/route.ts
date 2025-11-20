@@ -36,3 +36,11 @@ export async function POST(req:Request){
 
     return NextResponse.json({success:false});
 }
+
+export async function GET(){
+    try {
+        return NextResponse.json({success:true, totalPatients: await prisma.patient.count()});
+    } catch (error) {
+        return NextResponse.json({success:false, message:'Internal server error.'});
+    }
+}

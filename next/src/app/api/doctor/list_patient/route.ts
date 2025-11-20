@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req:Request){
     try {
-        const data = await req.json();
-
-        const { id } = data;
+        const { id } = await req.json();
 
         const patients = await prisma.doctors_patient.findMany({
             where:{
@@ -23,6 +21,7 @@ export async function POST(req:Request){
             }
         });
 
+        if (!patients) return NextResponse.json({success:false, message: 'Cannot list patients.'});
         return NextResponse.json({success:true, patients:patients});
     } catch (error) {
         return NextResponse.json({success:false, message:'Internal server error.'});

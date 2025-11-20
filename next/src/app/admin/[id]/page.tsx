@@ -1,6 +1,7 @@
 'use client'
 
 import Content from "@/features/layout/Content";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
 type isVisibleProps = {
@@ -116,6 +117,7 @@ type havePatientsProps = {
 }
 
 export default function Admin(){
+    const router = useRouter();
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
     const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false);
@@ -125,6 +127,11 @@ export default function Admin(){
     const [patientDesc, setPatientDesc] = useState<patientProps>();
     const [doctors, setDoctors] = useState<doctorsProps[]>();
     const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
+    const [totalPatients, setTotalPatients] = useState<number>(0);
+
+    const logout = () => {
+        router.replace('/');
+    }
 
     const registerDoctor = async (e:FormEvent) => {
         e.preventDefault();
@@ -175,8 +182,19 @@ export default function Admin(){
         setIsPatientListVisible(visible);
     }
 
+    const countPatients = async () => {
+        const res = await fetch('/api/admin/list_patient');
+
+        const data = await res.json();
+
+        if (data.success){
+            setTotalPatients(data.totalPatients);
+        }
+    };
+
     useEffect(()=>{
         listDoctors();
+        countPatients();
     }, [])
 
     const showPatients = (visible:boolean) =>{
@@ -224,7 +242,7 @@ export default function Admin(){
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
-                <div className="flex justify-between items-center w-[28%] ">
+                <div className="flex justify-between items-center w-[35%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
                     onClick={() => setIsVisible({dashboard:true, registerDoctor:false, doctorList:false})}>
                         Dashboard
@@ -237,6 +255,10 @@ export default function Admin(){
                     onClick={()=> setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})}>
                         Registered Doctor List
                     </button>
+                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200"
+                    onClick={() => logout()}>
+                        Logout
+                    </button>
                 </div>
             </div>
 
@@ -246,7 +268,7 @@ export default function Admin(){
                 <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
                     {/* APPEND HERE THE COUNT OF PATIENTS FROM DATABASE*/}
                     <h1 className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-                        560
+                        {totalPatients}
                     </h1>
                     <h1 className="text-xl">No. of Patients</h1>
                 </span>
@@ -254,7 +276,7 @@ export default function Admin(){
                 <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
                     {/* APPEND HERE THE COUNT OF DOCTORS FROM DATABASE*/}
                     <div className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-                        39
+                        {doctors?.length}
                     </div>
                     <h1 className="text-xl">No. of Doctors</h1>
                 </span>

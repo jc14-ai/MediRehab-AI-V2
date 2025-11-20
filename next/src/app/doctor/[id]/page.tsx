@@ -1,7 +1,7 @@
 'use client'
 
 import Content from "@/features/layout/Content";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 type isVisibleProps = {
@@ -61,7 +61,7 @@ export default function Doctor(){
 
     //GET THE DOCTOR ID HERE
     const { id } = params;
-
+    const router = useRouter();
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
     const [showExercises, setShowExercises] = useState<boolean>(false);
     const [showNotes, setShowNotes] = useState<boolean>(false);
@@ -74,8 +74,11 @@ export default function Doctor(){
     const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
 
-    useEffect(() => {
-        const loadPatients = async () => {
+    const logout = () => {
+        router.push('/');
+    }
+
+    const listPatients = async () => {
             const res = await fetch("/api/doctor/list_patient",{
                 method:'POST',
                 headers:{"Content-Type": 'application/json'},
@@ -91,7 +94,8 @@ export default function Doctor(){
             }
         }
 
-        loadPatients();
+    useEffect(() => {
+        listPatients();
     },[]);
 
     const registerPatient = async (e:FormEvent) => {
@@ -100,11 +104,11 @@ export default function Doctor(){
                 const res = await fetch("/api/doctor/register_patient", {
                     method: "POST",
                     headers:{"Content-Type":"application/json"},
-                    body: JSON.stringify(patient)
+                    body: JSON.stringify({...patient, doctorId:id})
                 })
                 const data = await res.json();
     
-                if (data) {
+                if (data.success) {
                     setIsDescriptionVisible(false);
                     listPatients();
                 } else{
@@ -112,21 +116,6 @@ export default function Doctor(){
                 }
             }catch(err){
                 console.error(err);  
-            }
-        };
-    
-        const listPatients = async () => {
-            try{
-                const res = await fetch('/api/doctor/list_patient');
-                const data = await res.json();
-    
-                if (data){
-                    setPatients(data);
-                }else{
-                    console.log("patient's list is empty!");
-                }
-            }catch(err){
-                console.error(err);
             }
         };
 
@@ -181,7 +170,7 @@ export default function Doctor(){
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
-                <div className="flex justify-between items-center w-[17%] ">
+                <div className="flex justify-between items-center w-[22%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
                     onClick={() => setIsVisible({dashboard:true, registerPatient:false})}>
                         Dashboard
@@ -189,6 +178,10 @@ export default function Doctor(){
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
                     onClick={() => setIsVisible({dashboard:false, registerPatient:true})}>
                         Register Patient
+                    </button>
+                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+                    onClick={() => logout()}>
+                        Logout
                     </button>
                 </div>
             </div>

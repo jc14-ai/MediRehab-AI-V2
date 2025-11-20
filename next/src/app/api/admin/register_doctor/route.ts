@@ -61,7 +61,17 @@ export async function POST(req:Request){
 }
 
 export async function GET(){
-    const doctors = await prisma.doctor.findMany();
+    const doctors = await prisma.doctor.findMany({
+        select:{
+            doctor_id:true,
+            full_name:true,
+            birth_date:true,
+            gender:true,
+            contact:true,
+            email:true,
+            address:true
+        }
+    });
 
     return NextResponse.json(doctors);
 }

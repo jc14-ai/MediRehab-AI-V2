@@ -83,6 +83,16 @@ type doctorProps = {
     role?:string;
 }
 
+type doctorsProps = {
+    gender: 'male' | 'female' | 'other' | '';
+    contact: string;
+    email: string;
+    address: string;
+    full_name: string;
+    birth_date: string;
+    doctor_id: string;
+}
+
 type patientProps = {
     patient: {
         account: {
@@ -100,15 +110,20 @@ type patientProps = {
     notes: string | null;
 }
 
+type havePatientsProps = {
+    havePatients: boolean;
+    doctorId?: string;
+}
+
 export default function Admin(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
     const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false);
     const [patients, setPatients] = useState<patientProps[]>([]);
     const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false);
-    const [havePatients, setHavePatients] = useState<boolean>(true);
+    const [havePatients, setHavePatients] = useState<havePatientsProps>();
     const [patientDesc, setPatientDesc] = useState<patientProps>();
-    const [doctors, setDoctors] = useState<any[]>();
+    const [doctors, setDoctors] = useState<doctorsProps[]>();
     const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
 
     const registerDoctor = async (e:FormEvent) => {
@@ -169,10 +184,41 @@ export default function Admin(){
         setPatients([]);
     }
 
-    const displayDoctorDeletion = (patients:any[], visibility:boolean) => {
+    const displayDoctorDeletion = async (doctorId:string, visibility:boolean) => {
         setIsDoctorDeletionShown(visibility);
-        patients.length == 0 ? setHavePatients(false) : setHavePatients(true);
+
+        const res = await fetch("/api/admin/list_patient", {
+            method:"POST",
+            headers:{"Content-Type": "application/json"},
+            body:JSON.stringify({doctorId:doctorId})
+        })
+
+        const data = await res.json();
+
+        if (data.success){
+            if(data.patients.length < 1){
+                setHavePatients({havePatients:false, doctorId:doctorId});
+            } else{
+                setHavePatients({havePatients:true, doctorId:doctorId});
+            }
+        }
     }
+
+    const deleteDoctor = async (doctorId:string) => {
+        const res = await fetch("/api/admin/remove_doctor", {
+            method:"POST",
+            headers:{"Content-Type": "application/json"},
+            body:JSON.stringify({doctorId:doctorId})
+        });
+        
+        const data = await res.json();
+        
+        if(data.success){
+            listDoctors();
+            setIsDoctorDeletionShown(false);
+        }
+    }
+
 
     return(
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
@@ -310,7 +356,7 @@ export default function Admin(){
                             onClick={() => listPatients(true, doctor['doctor_id'])}>
                                 View Patients
                             </button>
-                            <button className="text-[0.8em] bg-red-400 text-white rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-red-300 duration-200" onClick={() => displayDoctorDeletion(doctor['patients'], true)}>
+                            <button className="text-[0.8em] bg-red-400 text-white rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-red-300 duration-200" onClick={() => displayDoctorDeletion(doctor['doctor_id'], true)}>
                                 Unregister
                             </button>
                         </div>
@@ -398,11 +444,11 @@ export default function Admin(){
                 }
 
                 <div className={`${isDoctorDeletionShown ? 'flex' : 'hidden'} justify-center items-center bg-black/50 absolute inset-0`}>
-                    {!havePatients ? 
+                    {!havePatients?.havePatients ? 
                     <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-3">
                         <p className="mb-5">Are you sure you want to unregister this doctor?</p>
                         <div className="flex flex-row justify-evenly items-center w-full h-fit">
-                            <button className="bg-green-500 p-2 w-[100px] rounded-4xl text-white hover:bg-green-400 hover:cursor-pointer duration-200">Yes</button>
+                            <button className="bg-green-500 p-2 w-[100px] rounded-4xl text-white hover:bg-green-400 hover:cursor-pointer duration-200" onClick={() => deleteDoctor(havePatients?.doctorId ?? '')}>Yes</button>
                             <button className="bg-red-500 p-2 w-[100px] rounded-4xl text-white hover:bg-red-400 hover:cursor-pointer duration-200" onClick={() => setIsDoctorDeletionShown(false)}>No</button>
                         </div>
                     </div> :

@@ -31,8 +31,8 @@ export async function POST(req:Request){
             notes:true
         }});
 
-        return NextResponse.json(patients);
+        return NextResponse.json({success:true, patients:patients});
     }  
 
-    return NextResponse.json({})
+    return NextResponse.json({success:false});
 }

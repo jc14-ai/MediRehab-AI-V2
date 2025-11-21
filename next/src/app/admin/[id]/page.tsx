@@ -178,7 +178,7 @@ export default function Admin(){
 
         const data = await res.json();
 
-        setPatients(data);
+        setPatients(data.patients);
         setIsPatientListVisible(visible);
     }
 

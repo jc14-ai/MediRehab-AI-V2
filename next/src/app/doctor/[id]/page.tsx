@@ -55,6 +55,12 @@ type patientsProps = {
     notes:string;
 }
 
+type exerciseProps = {
+    exercise_id:string;
+    exercise:string;
+    description:string;
+}
+
 export default function Doctor(){
 
     const params = useParams<{ id:string }>();
@@ -64,18 +70,21 @@ export default function Doctor(){
     const router = useRouter();
     const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
     const [showExercises, setShowExercises] = useState<boolean>(false);
+    const [exercises, setExercises] = useState<exerciseProps[]>([]);
     const [showNotes, setShowNotes] = useState<boolean>(false);
     const [note, setNote] = useState<string>("");
     const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
     const [selectedPatient, setSelectedPatient] = useState<string>("");
+    const [selectedPatientIdByExercise, setSelectedPatientIdByExercise] = useState<string>("");
     const [showTasks, setShowTasks] = useState<boolean>(false);
+    const [assignedTasks, setAssignedTasks] = useState<exerciseProps[]>([]);
     const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
 
     const logout = () => {
-        router.push('/');
+        router.replace('/');
     }
 
     const listPatients = async () => {
@@ -97,6 +106,47 @@ export default function Doctor(){
     useEffect(() => {
         listPatients();
     },[]);
+    
+    const loadExercises = async (patientId:string) => {
+        const res = await fetch("/api/doctor/load_exercises",{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({patientId:patientId})
+        });
+        const data = await res.json();
+
+        if(data.success){
+            setExercises(data.exercises);
+        }
+    }
+
+    const assignExercise = async (patientId:string, exerciseId:string) => {
+        const res = await fetch("/api/doctor/assign_exercise",{
+            method:'POST',
+            headers:{'Content-Type': 'application/json'},
+            body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
+        })
+
+        const data = await res.json();
+
+        if(data.success){
+            loadExercises(patientId);
+        }
+    }
+
+    const loadAssignedExercise = async(patientId:string) => {
+        const res = await fetch("/api/doctor/load_assigned_exercise",{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({patientId:patientId})
+        });
+
+        const data = await res.json();
+
+        if(data.success){
+            setAssignedTasks(data.exercises);
+        }
+    }
 
     const registerPatient = async (e:FormEvent) => {
             e.preventDefault();
@@ -195,7 +245,10 @@ export default function Doctor(){
                     <div className="flex flex-col items-center w-full h-full p-5">
                         {patients.map(patient => 
                         <div key={patient.patient_id} className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
-                        onClick={() => setShowTasks(true)}>
+                        onClick={() => {
+                            loadAssignedExercise(patient.patient_id);
+                            setShowTasks(true);
+                            }}>
                             <h1>{patient['patient']['full_name']}</h1>
                             <span className="flex items-center gap-2">
                                 <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
@@ -207,8 +260,10 @@ export default function Doctor(){
                                     Notes
                                 </button>
                                 <button className="text-[0.9em] bg-gray-100 rounded-4xl p-2 w-[110px] hover:bg-gray-50 cursor-pointer duration-200" 
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                     e.stopPropagation();
+                                    setSelectedPatientIdByExercise(patient['patient_id']);
+                                    await loadExercises(patient['patient_id']);
                                     setShowExercises(true);
                                     }}>
                                     Assign Task
@@ -235,8 +290,9 @@ export default function Doctor(){
                             </span>
                             <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
                                 {/* Make this dynamically append inside this div */}
-                                <div className="flex justify-between items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
-                                    <h1 className="">Tasks Name</h1>
+                                {assignedTasks.map(exercise => 
+                                    <div className="flex justify-between items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
+                                    <h1 className="">{exercise['exercise']}</h1>
                                     <span className="flex flex-row items-center gap-2 text-[0.8em]">
                                         <button className="bg-green-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-green-300 duration-200" 
                                         onClick={() => {
@@ -251,6 +307,7 @@ export default function Doctor(){
                                         </button>
                                     </span>
                                 </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -321,9 +378,11 @@ export default function Doctor(){
                             </span>
                             <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
                                 {/* Make this dynamically append inside this div */}
-                                <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
-                                    <h1 className="">Exercise Name</h1>
-                                </div>
+                                {exercises?.map(exercise => 
+                                <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2"
+                                onClick={() => assignExercise(selectedPatientIdByExercise, exercise['exercise_id'])}>
+                                    <h1 className="">{exercise['exercise']}</h1>
+                                </div>)}
                             </div>
                         </div>
                     </div>

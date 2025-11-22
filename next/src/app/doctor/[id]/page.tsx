@@ -216,13 +216,30 @@ export default function Doctor(){
             console.log(data.message);
         }
 
+        const removeTask = async (patientId:string, exerciseId:string) => {
+            const res = await fetch("/api/doctor/remove_assigned_exercise", {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
+            });
+
+            const data = await res.json();
+
+            if(data.success){
+                loadAssignedExercise(patientId);
+            }
+        };
+
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
                 <div className="flex justify-between items-center w-[22%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => setIsVisible({dashboard:true, registerPatient:false})}>
+                    onClick={() => {
+                        listPatients();
+                        setIsVisible({dashboard:true, registerPatient:false});
+                        }}>
                         Dashboard
                     </button>
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
@@ -302,7 +319,7 @@ export default function Doctor(){
                                             Evaluation
                                         </button>
                                         <button className="bg-red-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-red-300 duration-200" 
-                                        onClick={() => console.log("Task removed")}>
+                                        onClick={() => removeTask(selectedPatientIdByExercise, exercise['exercise_id'])}>
                                             Remove
                                         </button>
                                     </span>

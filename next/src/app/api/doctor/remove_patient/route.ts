@@ -31,6 +31,27 @@ export async function POST(req:Request){
 
         if (!doctorPatientDeleted) return NextResponse.json({success:false, message:'Patient not found.'});
 
+        const assigns = await prisma.assign.findMany({
+            where:{
+                patient_id:Number(patientId)
+            },
+            select:{
+                assign_id:true
+            }
+        });
+
+        if(!assigns) return NextResponse.json({success:false, message:'Assigned tasks not found.'});
+
+        const assignDeleted = await prisma.assign.deleteMany({
+            where:{
+                assign_id:{
+                    in: assigns.map(assign => assign.assign_id)
+                }
+            }
+        });
+
+        if(!assignDeleted) return NextResponse.json({success:false, message:'Assigned tasks not deleted'});
+
         const patientDeleted = await prisma.patient.delete({
             where:{
                 patient_id: doctorPatient.patient.patient_id

@@ -61,6 +61,11 @@ type exerciseProps = {
     description:string;
 }
 
+type resultImagesProps = {
+    image:string,
+    filepath:string
+}
+
 export default function Doctor(){
 
     const params = useParams<{ id:string }>();
@@ -82,6 +87,7 @@ export default function Doctor(){
     const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
     const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
+    const [resultImages, setResultImages] = useState<resultImagesProps[]>();
 
     const logout = () => {
         router.replace('/');
@@ -125,7 +131,7 @@ export default function Doctor(){
             method:'POST',
             headers:{'Content-Type': 'application/json'},
             body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
-        })
+        });
 
         const data = await res.json();
 
@@ -230,6 +236,27 @@ export default function Doctor(){
             }
         };
 
+        const checkEvaluation = async (patientId:string, exerciseId:string) => {
+            const res = await fetch("/api/doctor/check_evaluation",{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
+            });
+
+            const data = await res.json();
+
+            if(data.success) {
+                if (data.existing){
+                    setShowEvaluation(true);
+                    setShowTasks(false);
+                    setResultImages(data.resultImages);
+                }else {
+                    setShowEvaluation(false);
+                    setShowTasks(true);
+                }
+            }
+        }
+
     return (
         <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
             {/* NAVIGATION BAR */}
@@ -263,6 +290,7 @@ export default function Doctor(){
                         {patients.map(patient => 
                         <div key={patient.patient_id} className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
                         onClick={() => {
+                            setSelectedPatientIdByExercise(patient['patient_id']);
                             loadAssignedExercise(patient.patient_id);
                             setShowTasks(true);
                             }}>
@@ -313,8 +341,7 @@ export default function Doctor(){
                                     <span className="flex flex-row items-center gap-2 text-[0.8em]">
                                         <button className="bg-green-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-green-300 duration-200" 
                                         onClick={() => {
-                                            setShowTasks(false);
-                                            setShowEvaluation(true);
+                                            checkEvaluation(selectedPatientIdByExercise, exercise['exercise_id']);
                                             }}>
                                             Evaluation
                                         </button>
@@ -342,9 +369,9 @@ export default function Doctor(){
                             </span>
                             <div className="flex justify-evenly items-center w-full h-[400px] bg-blue-100 rounded-2xl mt-2 p-4 mb-5">
                                 {/* Make this dynamically append inside this div */}
-                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
-                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
-                                <img className="bg-black rounded-2xl w-[250px] h-full"/>
+                                {resultImages?.map(resultImage => 
+                                    <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImage.image}/>
+                                )}
                             </div>
                             <h1 className="mb-1 font-bold">Feedback</h1>
                             <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300"/>

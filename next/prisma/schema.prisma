@@ -97,7 +97,7 @@ model patient {
 model result {
   result_id    Int            @id @default(autoincrement())
   assign_id    Int
-  score        Decimal        @db.Decimal(3, 2)
+  score        Decimal        @db.Decimal(5, 2)
   feedback     feedback[]
   assign       assign         @relation(fields: [assign_id], references: [assign_id], onDelete: NoAction, onUpdate: NoAction)
   result_image result_image[]

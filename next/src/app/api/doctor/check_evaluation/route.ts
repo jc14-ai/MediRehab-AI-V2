@@ -42,7 +42,7 @@ export async function POST(req:Request){
 
         return NextResponse.json({success:true, existing: true, resultImages:resultImages.map(resultImages => {
             return {image:resultImages.image_name, filepath:resultImages.filepath}
-        })});
+        }), resultId:existing.result_id});
     } catch (error) {
         return NextResponse.json({success:false, message:'Internal server error.'});
     }

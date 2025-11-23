@@ -71,6 +71,10 @@ export default function Patient() {
         listAssignedExercises();
     }, [])
 
+    const logout = () => {
+        router.replace("/");
+    }
+
     const displayName = async () => {
         const res = await fetch("/api/display_name",{
             method:'POST',
@@ -111,7 +115,13 @@ export default function Patient() {
     }
 
     return (
-        <Content className="flex justify-center items-center w-screen h-screen bg-white p-5">
+        <Content className="flex flex-col justify-center items-center w-screen h-screen bg-white p-5">
+             <div className="flex justify-center items-center w-[22%]">
+                <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+                onClick={() => logout()}>
+                    Logout
+                </button>
+            </div>
             <div className="flex flex-wrap justify-start items-start w-full h-full gap-5">
                 {assignedExercises.map(exercise =>
                     <div className="flex flex-col justify-center items-center bg-blue-200 h-[300px] w-[283px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"

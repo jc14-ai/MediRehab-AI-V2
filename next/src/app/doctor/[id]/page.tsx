@@ -88,6 +88,8 @@ export default function Doctor(){
     const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
     const [resultImages, setResultImages] = useState<resultImagesProps[]>();
+    const [feedback, setFeedback] = useState<string>("");
+    const [selectedResultId, setSelectedResultId] = useState<string>("");
 
     const logout = () => {
         router.replace('/');
@@ -250,10 +252,26 @@ export default function Doctor(){
                     setShowEvaluation(true);
                     setShowTasks(false);
                     setResultImages(data.resultImages);
+                    setSelectedResultId(data.resultId);
                 }else {
                     setShowEvaluation(false);
                     setShowTasks(true);
                 }
+            }
+        }
+
+        const sendFeedback = async (resultId:string, feedback:string) => {
+            const res = await fetch("/api/doctor/send_feedback", {
+                method:'POST',
+                headers:{'Content-Type': 'application/json'},
+                body: JSON.stringify({resultId:resultId, feedback:feedback})
+            });
+
+            const data = await res.json();
+
+            if(data.success){
+                setFeedback("");
+                console.log("feedback sent!");
             }
         }
 
@@ -374,9 +392,12 @@ export default function Doctor(){
                                 )}
                             </div>
                             <h1 className="mb-1 font-bold">Feedback</h1>
-                            <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300"/>
+                            <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300" value={feedback} onChange={(e) => setFeedback(e.target.value)}/>
                             <span className="flex flex-col justify-end items-end w-full mt-3">    
-                                <button className="bg-blue-500 text-white rounded-4xl w-[100px] h-[35px] cursor-pointer hover:bg-blue-400 duration-200">Send</button>
+                                <button className="bg-blue-500 text-white rounded-4xl w-[100px] h-[35px] cursor-pointer hover:bg-blue-400 duration-200"
+                                onClick={(e) => sendFeedback(selectedResultId, feedback)}>
+                                    Send
+                                </button>
                             </span>
                         </div>
                     </div>

@@ -2,7 +2,8 @@
 
 import CameraFeed from "@/features/CameraFeed";
 import Content from "@/features/layout/Content";
-import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // type exercise = {
 //     name: string;
@@ -44,11 +45,59 @@ const exercises = [
     }
 ]
 
+type assignedExerciseProps = {
+    exercise:string,
+    description:string,
+    image:string,
+    filepath:string,
+    score:number
+}
+
 export default function Patient() {
+    const params = useParams <{ id:string }>(); 
+
+    //GET THE PATIENT ID HERE
+    const { id } = params;
+    const router = useRouter();
     const [recordMode, setRecordMode] = useState<boolean>(false);
     const [description, setDescription] = useState<string>("");
     const [score, setScore] = useState<number>(0);
     const [showDescription, setShowDescription] = useState<boolean>(false);
+    const [name, setName] = useState<string>("");
+    const [assignedExercises, setAssignedExercises] = useState<assignedExerciseProps[]>([]);
+
+    useEffect(() => {
+        //displayName();
+        listAssignedExercises();
+    }, [])
+
+    const displayName = async () => {
+        const res = await fetch("/api/display_name",{
+            method:'POST',
+            headers:{'Content-Type': 'application/json'},
+            body: JSON.stringify({id:id})
+        });
+
+        const data = await res.json();
+
+        if(data.success){
+            setName(data.name);
+        }
+    }
+
+    const listAssignedExercises = async () => {
+        const res = await fetch("/api/patient/load_assigned_exercise", {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({patientId:id})
+        });
+
+        const data = await res.json();
+
+        if(data.success){
+            setAssignedExercises(data.exercises);
+        }
+    }
 
     const displayExercise = (visibility: boolean, description: string, score: number) => {
         setDescription(description);
@@ -64,11 +113,11 @@ export default function Patient() {
     return (
         <Content className="flex justify-center items-center w-screen h-screen bg-white p-5">
             <div className="flex flex-wrap justify-start items-start w-full h-full gap-5">
-                {exercises.map(exercise =>
+                {assignedExercises.map(exercise =>
                     <div className="flex flex-col justify-center items-center bg-blue-200 h-[300px] w-[283px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"
-                        onClick={() => displayExercise(true, exercise['description'], exercise['scoreSummary'])}>
+                        onClick={() => displayExercise(true, exercise['description'], exercise['score'] ?? 0)}>
                         <img src={exercise['image']} className="w-full h-[200px] object-cover" />
-                        <h1 className="flex flex-nowrap justify-center w-full">{exercise['name']}</h1>
+                        <h1 className="flex flex-nowrap justify-center w-full">{exercise['exercise']}</h1>
                     </div>
                 )}
 

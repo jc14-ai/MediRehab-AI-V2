@@ -1,486 +1,685 @@
 'use client'
 
-import Content from "@/features/layout/Content";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import type React from "react"
 
-type isVisibleProps = {
-    dashboard:boolean;
-    registerDoctor:boolean;
-    doctorList:boolean;
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { Header } from "@/components/medirehab/header"
+import { StatCard } from "@/components/medirehab/stat-card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Users, UserCheck, Plus, Search, MoreHorizontal, Trash2, LogOut, Eye } from "lucide-react"
+
+interface Doctor {
+  doctor_id: number
+  full_name: string
+  email: string
+  contact: string
+  account: {
+    username: string
+  }
 }
 
-const doctorList = [
-    {   
-        name:"Karl Crespo",
-        patients:[
-            {
-                name:"John Xerxes",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            },
-            {
-                name:"Edwin Squarepants",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            }
-        ]
-    },
-    {   
-        name:"Karl Crespo 2", 
-        patients:[
-            {
-                name:"John Xerxes 2",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            },
-            {
-                name:"Edwin Squarepants 2",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            }
-        ]
-    },
-    {   
-        name:"Karl Crespo 3", 
-        patients:[
-            // {name:"John Xerxes 3"},
-            // {name:"Edwin Squarepants 3"}
-        ]
-    }
-]
-
-type doctorProps = {
-    accountId?:string;
-    fullname?:string;
-    birthDate?:string;
-    gender?:string;
-    contact?:string;
-    email?:string;
-    address?:string;
-    profilePic?:string;
-    username?:string;
-    password?:string;
-    role?:string;
-}
-
-type doctorsProps = {
+interface Patient {
+  patient: {
+    account: {
+      registration_date: string;
+    };
     gender: 'male' | 'female' | 'other' | '';
     contact: string;
     email: string;
     address: string;
     full_name: string;
     birth_date: string;
-    doctor_id: string;
+    account_id: string;
+  };
+  patient_id: string;
+  notes: string | null;
 }
 
-type patientProps = {
-    patient: {
-        account: {
-            registration_date: string;
-        };
-        gender: 'male' | 'female' | 'other' | '';
-        contact: string;
-        email: string;
-        address: string;
-        full_name: string;
-        birth_date: string;
-        account_id: string;
-    };
-    patient_id: string;
-    notes: string | null;
+interface isVisibleProps {
+  dashboard: boolean;
+  registerDoctor: boolean;
+  doctorList: boolean;
 }
 
-type havePatientsProps = {
-    havePatients: boolean;
-    doctorId?: string;
-}
+export default function AdminDashboard() {
+  const params = useParams<{ id: string }>()
+  const router = useRouter()
 
-export default function Admin(){
-    const router = useRouter();
-    const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
-    const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true,registerDoctor:false,doctorList:false});
-    const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false);
-    const [patients, setPatients] = useState<patientProps[]>([]);
-    const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false);
-    const [havePatients, setHavePatients] = useState<havePatientsProps>();
-    const [patientDesc, setPatientDesc] = useState<patientProps>();
-    const [doctors, setDoctors] = useState<doctorsProps[]>();
-    const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
-    const [totalPatients, setTotalPatients] = useState<number>(0);
+  const [totalPatients, setTotalPatients] = useState(0)
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showAddDoctor, setShowAddDoctor] = useState(false)
+  const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerDoctor:false, doctorList:false})
+  const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false)
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false)
+  const [havePatients, setHavePatients] = useState<{havePatients: boolean; doctorId?: string}>()
+  const [patientDesc, setPatientDesc] = useState<Patient>()
 
-    const logout = () => {
-        router.replace('/');
+  // Registration form
+  const [regForm, setRegForm] = useState({
+    fullName: "",
+    birthDate: "",
+    gender: "male",
+    contact: "",
+    email: "",
+    address: "",
+    profilePic: "",
+    username: "",
+    password: "",
+  })
+  const [registering, setRegistering] = useState(false)
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const [patientsRes, doctorsRes] = await Promise.all([
+        fetch("/api/admin/list_patient"),
+        fetch("/api/admin/register_doctor"), // GET returns all doctors
+      ])
+
+      const patientsData = await patientsRes.json()
+      const doctorsData = await doctorsRes.json()
+
+      if (Array.isArray(patientsData)) {
+        setTotalPatients(patientsData.length)
+      }
+      if (Array.isArray(doctorsData)) {
+        setDoctors(doctorsData)
+      }
+    } catch (error) {
+      console.error("Error fetching admin data:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const registerDoctor = async (e:FormEvent) => {
-        e.preventDefault();
-        try{
-            const res = await fetch("/api/admin/register_doctor", {
-                method: "POST",
-                headers:{"Content-Type":"application/json"},
-                body: JSON.stringify(doctor)
-            })
-            const data = await res.json();
-
-            if (data) {
-                setIsDescriptionVisible(false);
-                listDoctors();
-            } else{
-                console.log("there is problem in doctor registration!");
-            }
-        }catch(err){
-            console.error(err)  
-        }
-    }
-
-    const listDoctors = async () => {
-        try{
-            const res = await fetch('/api/admin/register_doctor');
-            const data = await res.json();
-
-            if (data){
-                setDoctors(data);
-            }else{
-                console.log("doctor's list is empty!");
-            }
-        }catch(err){
-            console.error(err)
-        }
-    }
-
-    const listPatients = async (visible:boolean, doctorId:string) => {
-        const res = await fetch("/api/admin/list_patient", {
-            method:"POST",
-            headers:{"Content-Type": "application/json"},
-            body:JSON.stringify({doctorId:doctorId})
+  const registerDoctor = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegistering(true)
+    try {
+      const res = await fetch("/api/admin/register_doctor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...regForm,
+          role: "doctor",
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowAddDoctor(false)
+        setRegForm({
+          fullName: "",
+          birthDate: "",
+          gender: "male",
+          contact: "",
+          email: "",
+          address: "",
+          profilePic: "",
+          username: "",
+          password: "",
         })
-
-        const data = await res.json();
-
-        setPatients(data.patients);
-        setIsPatientListVisible(visible);
+        fetchData()
+        setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})
+      } else {
+        console.error("Registration failed:", data.message)
+      }
+    } catch (error) {
+      console.error("Error registering doctor:", error)
+    } finally {
+      setRegistering(false)
     }
+  }
 
-    const countPatients = async () => {
-        const res = await fetch('/api/admin/list_patient');
-
-        const data = await res.json();
-
-        if (data.success){
-            setTotalPatients(data.totalPatients);
-        }
-    };
-
-    useEffect(()=>{
-        listDoctors();
-        countPatients();
-    }, [])
-
-    const showPatients = (visible:boolean) =>{
-        setIsPatientListVisible(visible);
-        setPatients([]);
+  const removeDoctor = async (doctorId: number) => {
+    if (!confirm("Are you sure you want to remove this doctor?")) return
+    
+    try {
+      const res = await fetch("/api/admin/remove_doctor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        fetchData()
+      } else {
+        console.error("Failed to remove doctor:", data.message)
+      }
+    } catch (error) {
+      console.error("Error removing doctor:", error)
     }
+  }
 
-    const displayDoctorDeletion = async (doctorId:string, visibility:boolean) => {
-        setIsDoctorDeletionShown(visibility);
+  const listPatients = async (visible: boolean, doctorId: string) => {
+    const res = await fetch("/api/admin/list_patient", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({doctorId: doctorId})
+    })
 
-        const res = await fetch("/api/admin/list_patient", {
-            method:"POST",
-            headers:{"Content-Type": "application/json"},
-            body:JSON.stringify({doctorId:doctorId})
-        })
+    const data = await res.json()
+    setPatients(data.patients || [])
+    setIsPatientListVisible(visible)
+  }
 
-        const data = await res.json();
+  const displayDoctorDeletion = async (doctorId: string, visibility: boolean) => {
+    setIsDoctorDeletionShown(visibility)
 
-        if (data.success){
-            if(data.patients.length < 1){
-                setHavePatients({havePatients:false, doctorId:doctorId});
-            } else{
-                setHavePatients({havePatients:true, doctorId:doctorId});
-            }
-        }
+    const res = await fetch("/api/admin/list_patient", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({doctorId: doctorId})
+    })
+
+    const data = await res.json()
+
+    if (data.success) {
+      if (!data.patients || data.patients.length < 1) {
+        setHavePatients({havePatients: false, doctorId: doctorId})
+      } else {
+        setHavePatients({havePatients: true, doctorId: doctorId})
+      }
     }
+  }
 
-    const deleteDoctor = async (doctorId:string) => {
-        const res = await fetch("/api/admin/remove_doctor", {
-            method:"POST",
-            headers:{"Content-Type": "application/json"},
-            body:JSON.stringify({doctorId:doctorId})
-        });
-        
-        const data = await res.json();
-        
-        if(data.success){
-            listDoctors();
-            setIsDoctorDeletionShown(false);
-        }
+  const deleteDoctor = async (doctorId: string) => {
+    const res = await fetch("/api/admin/remove_doctor", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({doctorId: doctorId})
+    })
+    
+    const data = await res.json()
+    
+    if (data.success) {
+      fetchData()
+      setIsDoctorDeletionShown(false)
     }
+  }
 
+  const showPatients = (visible: boolean) => {
+    setIsPatientListVisible(visible)
+    setPatients([])
+  }
 
-    return(
-        <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
-            {/* NAVIGATION BAR */}
-            <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
-                <div className="flex justify-between items-center w-[35%] ">
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => setIsVisible({dashboard:true, registerDoctor:false, doctorList:false})}>
-                        Dashboard
-                    </button>
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => setIsVisible({dashboard:false, registerDoctor:true, doctorList:false})}>
-                        Register Doctor
-                    </button>
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={()=> setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})}>
-                        Registered Doctor List
-                    </button>
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200"
-                    onClick={() => logout()}>
-                        Logout
-                    </button>
+  const logout = () => {
+    router.replace('/')
+  }
+
+  const filteredDoctors = doctors.filter(
+    (d) =>
+      d.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.account?.username.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Navigation Bar */}
+      <div className="flex justify-center items-center bg-blue-300 w-full h-[70px]">
+        <div className="flex justify-between items-center w-[35%]">
+          <button 
+            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+            onClick={() => setIsVisible({dashboard:true, registerDoctor:false, doctorList:false})}
+          >
+            Dashboard
+          </button>
+          <button 
+            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+            onClick={() => setIsVisible({dashboard:false, registerDoctor:true, doctorList:false})}
+          >
+            Register Doctor
+          </button>
+          <button 
+            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+            onClick={() => setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})}
+          >
+            Registered Doctor List
+          </button>
+          <button 
+            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200"
+            onClick={() => logout()}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {/* Dashboard View */}
+      <div className={`${isVisible.dashboard ? 'flex' : 'hidden'} justify-evenly items-center bg-gray-200 w-full h-full`}>
+        <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
+          <h1 className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
+            {totalPatients}
+          </h1>
+          <h1 className="text-xl">No. of Patients</h1>
+        </span>
+        <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
+          <div className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
+            {doctors.length}
+          </div>
+          <h1 className="text-xl">No. of Doctors</h1>
+        </span>
+      </div>
+
+      {/* Register Doctor View */}
+      <div className={`${isVisible.registerDoctor ? 'flex' : 'hidden'} justify-center items-center bg-gray-200 w-full h-full`}>
+        <button 
+          className="bg-blue-50 rounded-[100px] w-[100px] h-[100px] border border-blue-50 hover:bg-white hover:border-blue-300 hover:cursor-pointer duration-200" 
+          onClick={() => setShowAddDoctor(true)}
+        >
+          Add
+        </button>
+      </div>
+
+      {/* Registered Doctor List View */}
+      <div className={`${isVisible.doctorList ? 'block' : 'hidden'} bg-gray-200 w-full min-h-screen p-8`}>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div>
+                <CardTitle>Doctor Management</CardTitle>
+                <CardDescription>
+                  {doctors.length} doctor{doctors.length !== 1 ? 's' : ''} registered in the system
+                </CardDescription>
+              </div>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search doctors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
+                <Button onClick={() => setShowAddDoctor(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Doctor
+                </Button>
+              </div>
             </div>
-
-            {/* DASHBOARD */}
-            <div className={`${isVisible['dashboard'] ? 'flex': 'hidden'} justify-evenly items-center bg-gray-200 w-full h-full`}>
-                {/* number of patients chart */}
-                <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
-                    {/* APPEND HERE THE COUNT OF PATIENTS FROM DATABASE*/}
-                    <h1 className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-                        {totalPatients}
-                    </h1>
-                    <h1 className="text-xl">No. of Patients</h1>
-                </span>
-                {/* number of doctors chart */}
-                <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
-                    {/* APPEND HERE THE COUNT OF DOCTORS FROM DATABASE*/}
-                    <div className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-                        {doctors?.length}
-                    </div>
-                    <h1 className="text-xl">No. of Doctors</h1>
-                </span>
-            </div>
-
-            {/* REGISTER DOTOR */}
-            <div className={ `${isVisible['registerDoctor'] ? 'flex': 'hidden'} justify-center items-center bg-gray-200 w-full h-full`}>
-                <button className="bg-blue-50 rounded-[100px] w-[100px] h-[100px] border border-blue-50 hover:bg-white hover:border-blue-300 hover:cursor-pointer duration-200" onClick={() => setIsDescriptionVisible(true)}>
-                    Add
-                </button>
-                <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`}>
-                    <form onSubmit={registerDoctor} className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
-                        <span className="h-[90px] w-fit mb-4">
-                            <h1 className="text-2xl mb-2 font-bold">Register New Doctor</h1>
-                            <h1 className="text-gray-500">Fill in the doctor's information below. All fields are required.</h1>
-                        </span>
-                        <div className="flex flex-col w-full">
-                            <h1 className="text-xl mb-4">Personal Information</h1>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input onChange={(e) => setDoctor({...doctor, fullname:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
-                            </span>
-                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input onChange={(e) => setDoctor({...doctor, birthDate:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
-                                </span>
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select onChange={(e) => setDoctor({...doctor, gender:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
-                                        <option value="">Select gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </span>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="ml-2 text-muted-foreground">Loading doctors...</span>
+              </div>
+            ) : filteredDoctors.length > 0 ? (
+              <ScrollArea className="h-[400px] rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Doctor Information</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead className="w-[200px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDoctors.map((doctor) => (
+                      <TableRow key={doctor.doctor_id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                              {doctor.full_name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()}
                             </div>
-                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
-                                    <input onChange={(e) => setDoctor({...doctor, contact:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
-                                </span>
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
-                                    <input onChange={(e) => setDoctor({...doctor, email:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
-                                </span>
+                            <div>
+                              <p className="font-medium text-foreground">{doctor.full_name}</p>
+                              <p className="text-sm text-muted-foreground">{doctor.email}</p>
                             </div>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
-                                <input onChange={(e) => setDoctor({...doctor, address:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
-                            </span>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
-                                <input onChange={(e) => setDoctor({...doctor, profilePic:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
-                            </span>
-                            <div className="w-full border-t border-gray-300 pt-5">
-                                <h1 className="text-xl mb-4">Account Information</h1>
-
-                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
-                                        <input onChange={(e) => setDoctor({...doctor, username:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
-                                    </span>
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
-                                        <input onChange={(e) => setDoctor({...doctor, password:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
-                                    </span>
-                                </div>
-                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value={`${new Date().toISOString().split("T")[0]}`} disabled required/>
-                                    </span>
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Doctor" disabled required/>
-                                    </span>
-                                </div>
-                                <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
-                                    <input className="border border-gray-300 rounded-xl p-3 text-gray-700 text-[0.9em] w-[80px] hover:bg-blue-400 hover:text-white hover:cursor-pointer duration-200" value="Cancel" 
-                                    onClick={() => setIsDescriptionVisible(false)} type="button"/>
-                                    <button type="submit" className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200">
-                                        Register Doctor
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            {/* REGISTERED DOCTOR LIST */}
-            <div className={`${isVisible['doctorList'] ? 'flex': 'hidden'} items-center flex-col bg-gray-200 w-full h-full`}>
-                {doctors?.map(doctor => 
-                    <div className="flex flex-row justify-between items-center p-2 pl-4 pr-4 bg-blue-300 w-[50%] h-[60px] mt-2 rounded-4xl hover:bg-blue-200 hover:cursor-pointer duration-200" >
-                        <h1 className="bg-gray-50 rounded-4xl p-1 pl-5 pr-5">{doctor['full_name']}</h1>
-                        <div className="w-fit">
-                            <button className={`text-[0.8em] bg-gray-100 rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200 mr-2`} 
-                            onClick={() => listPatients(true, doctor['doctor_id'])}>
-                                View Patients
-                            </button>
-                            <button className="text-[0.8em] bg-red-400 text-white rounded-4xl p-2 pl-4 pr-4 hover:cursor-pointer hover:bg-red-300 duration-200" onClick={() => displayDoctorDeletion(doctor['doctor_id'], true)}>
-                                Unregister
-                            </button>
-                        </div>
-                    </div> 
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            @{doctor.account?.username}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{doctor.contact}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => listPatients(true, doctor.doctor_id.toString())}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Patients
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => displayDoctorDeletion(doctor.doctor_id.toString(), true)}
+                            >
+                              Unregister
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            ) : (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  {searchQuery ? "No doctors found" : "No doctors registered"}
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                  {searchQuery 
+                    ? "Try adjusting your search terms to find what you're looking for." 
+                    : "Get started by adding the first healthcare professional to the platform."
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setShowAddDoctor(true)} size="lg">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Doctor
+                  </Button>
                 )}
-                {patients.length > 0 ? 
-                <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center absolute inset-0 bg-black/50`} 
-                onClick={() => showPatients(false)}>
-                    <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-2">
-                        {patients.map(patient => 
-                        <div className="flex justify-between items-center bg-blue-200 mb-2 rounded-2xl w-full h-[40px] p-2 pl-4 pr-4 hover:bg-blue-100 hover:cursor-pointer duration-200">
-                            <h1 className="bg-gray-50 rounded-4xl pl-3 pr-4">{patient['patient']['full_name']}</h1>
-                            <button className="text-[0.8em] bg-gray-100 rounded-4xl p-1 pl-4 pr-4 hover:cursor-pointer hover:bg-gray-50 duration-200" 
-                            onClick={() => setPatientDesc(patient)}>
-                                View
-                            </button>
-                        </div>
-                        )}
-                    </div>
-                </div> : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-
-                {/* 
-                name:string;
-                birth:string;
-                gender:string;
-                contactNumber:string;
-                email:string;
-                address:string;
-                profilePhoto:string;
-                registrationDate:sting;
-                */}
-
-                {patientDesc ? 
-                <div className={`${patientDesc['patient']['full_name'] ? 'flex': 'hidden'} justify-center items-center bg-black/50 absolute inset-0`} 
-                onClick={() => setPatientDesc({patient_id:"",notes:"",patient:{account:{registration_date:""},account_id:"",address:"",birth_date:"",contact:"",email:"",full_name:"",gender:""}})}>
-                    <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4" onClick={(e) => e.stopPropagation()}>
-                        <h1 className="text-2xl font-bold">Patient Information</h1>
-                        <div className="flex flex-row items-center w-full h-[140px] p-2 border-b border-gray-300">
-                            <img src='/zild.jpg'className="h-[100px] w-[100px] rounded-[150px] object-cover border border-blue-100"/>
-                            <span className="ml-2 h-fit w-fit">
-                                <h1 className="text-xl font-bold">{patientDesc['patient']['full_name']}</h1>
-                                <h1 className="text-gray-700">{patientDesc['patient']['gender']}</h1>
-                            </span>
-                        </div>
-                        <div className="flex flex-col w-full h-full pt-4 gap-4">
-                            <div className="flex flex-row">
-                                <img src="/file.svg" className="w-[25px]"/>
-                                <span className="ml-3">
-                                    <h1 className="text-gray-500 text-[0.8em]">Date of Birth</h1>
-                                    <h1>{patientDesc['patient']['birth_date']}</h1>
-                                </span>
-                            </div>
-                            <div className="flex flex-row">
-                                <img src="/file.svg" className="w-[25px]"/>
-                                <span className="ml-3">
-                                    <h1 className="text-gray-500 text-[0.8em]">Email Address</h1>
-                                    <h1>{patientDesc['patient']['email']}</h1>
-                                </span>
-                            </div>
-                            <div className="flex flex-row">
-                                <img src="/file.svg" className="w-[25px]"/>
-                                <span className="ml-3">
-                                    <h1 className="text-gray-500 text-[0.8em]">Contact Number</h1>
-                                    <h1>{patientDesc['patient']['contact']}</h1>
-                                </span>
-                            </div>
-                            <div className="flex flex-row">
-                                <img src="/file.svg" className="w-[25px]"/>
-                                <span className="ml-3">
-                                    <h1 className="text-gray-500 text-[0.8em]">Address</h1>
-                                    <h1>{patientDesc['patient']['address']}</h1>
-                                </span>
-                            </div>
-                            <div className="flex flex-row">
-                                <img src="/file.svg" className="w-[25px]"/>
-                                <span className="ml-3">
-                                    <h1 className="text-gray-500 text-[0.8em]">Regitration Date</h1>
-                                    <h1>{patientDesc['patient']['account']['registration_date']}</h1>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div> : null
-                }
-
-                <div className={`${isDoctorDeletionShown ? 'flex' : 'hidden'} justify-center items-center bg-black/50 absolute inset-0`}>
-                    {!havePatients?.havePatients ? 
-                    <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-3">
-                        <p className="mb-5">Are you sure you want to unregister this doctor?</p>
-                        <div className="flex flex-row justify-evenly items-center w-full h-fit">
-                            <button className="bg-green-500 p-2 w-[100px] rounded-4xl text-white hover:bg-green-400 hover:cursor-pointer duration-200" onClick={() => deleteDoctor(havePatients?.doctorId ?? '')}>Yes</button>
-                            <button className="bg-red-500 p-2 w-[100px] rounded-4xl text-white hover:bg-red-400 hover:cursor-pointer duration-200" onClick={() => setIsDoctorDeletionShown(false)}>No</button>
-                        </div>
-                    </div> :
-                    <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-3">
-                        <p className="mb-5">Doctor have patients, cannot be unregistered.</p>
-                        <button className="bg-green-500 p-2 w-[100px] rounded-4xl text-white hover:bg-green-400 hover:cursor-pointer duration-200" onClickCapture={() => setIsDoctorDeletionShown(false)}>Okay</button>
-                    </div>
-                    }
-                </div>
+      {/* Patient List Modal */}
+      {patients.length > 0 && (
+        <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50 z-50`} 
+          onClick={() => showPatients(false)}>
+          <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Patient List</h2>
+              <Button variant="outline" onClick={() => showPatients(false)}>Close</Button>
             </div>
-        </Content>
-    );
+            <ScrollArea className="h-[500px]">
+              {patients.map(patient => (
+                <div key={patient.patient_id} className="flex justify-between items-center bg-blue-200 mb-2 rounded-2xl w-full p-3 hover:bg-blue-100 hover:cursor-pointer duration-200">
+                  <h1 className="bg-gray-50 rounded-4xl px-3 py-1">{patient.patient.full_name}</h1>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setPatientDesc(patient)}
+                  >
+                    View
+                  </Button>
+                </div>
+              ))}
+            </ScrollArea>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Details Modal */}
+      {patientDesc && (
+        <div className="flex justify-center items-center fixed inset-0 bg-black/50 z-50" 
+          onClick={() => setPatientDesc(undefined)}>
+          <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4" onClick={(e) => e.stopPropagation()}>
+            <h1 className="text-2xl font-bold mb-4">Patient Information</h1>
+            <div className="flex flex-row items-center w-full h-[140px] p-2 border-b border-gray-300">
+              <div className="h-[100px] w-[100px] rounded-[150px] bg-primary/10 flex items-center justify-center text-primary font-medium text-2xl">
+                {patientDesc.patient.full_name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()}
+              </div>
+              <span className="ml-4 h-fit w-fit">
+                <h1 className="text-xl font-bold">{patientDesc.patient.full_name}</h1>
+                <h1 className="text-gray-700 capitalize">{patientDesc.patient.gender}</h1>
+              </span>
+            </div>
+            <div className="flex flex-col w-full h-full pt-4 gap-4">
+              <div className="flex flex-row">
+                <span className="ml-3">
+                  <h1 className="text-gray-500 text-[0.8em]">Date of Birth</h1>
+                  <h1>{patientDesc.patient.birth_date}</h1>
+                </span>
+              </div>
+              <div className="flex flex-row">
+                <span className="ml-3">
+                  <h1 className="text-gray-500 text-[0.8em]">Email Address</h1>
+                  <h1>{patientDesc.patient.email}</h1>
+                </span>
+              </div>
+              <div className="flex flex-row">
+                <span className="ml-3">
+                  <h1 className="text-gray-500 text-[0.8em]">Contact Number</h1>
+                  <h1>{patientDesc.patient.contact}</h1>
+                </span>
+              </div>
+              <div className="flex flex-row">
+                <span className="ml-3">
+                  <h1 className="text-gray-500 text-[0.8em]">Address</h1>
+                  <h1>{patientDesc.patient.address}</h1>
+                </span>
+              </div>
+              <div className="flex flex-row">
+                <span className="ml-3">
+                  <h1 className="text-gray-500 text-[0.8em]">Registration Date</h1>
+                  <h1>{patientDesc.patient.account.registration_date}</h1>
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button onClick={() => setPatientDesc(undefined)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Deletion Confirmation Modal */}
+      <div className={`${isDoctorDeletionShown ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50 z-50`}>
+        {!havePatients?.havePatients ? 
+          <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-6">
+            <p className="mb-5 text-center">Are you sure you want to unregister this doctor?</p>
+            <div className="flex flex-row justify-evenly items-center w-full h-fit gap-4">
+              <Button 
+                className="bg-green-500 hover:bg-green-400 text-white w-[100px]" 
+                onClick={() => deleteDoctor(havePatients?.doctorId ?? '')}
+              >
+                Yes
+              </Button>
+              <Button 
+                className="bg-red-500 hover:bg-red-400 text-white w-[100px]" 
+                onClick={() => setIsDoctorDeletionShown(false)}
+              >
+                No
+              </Button>
+            </div>
+          </div> :
+          <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-6">
+            <p className="mb-5 text-center">Doctor has patients, cannot be unregistered.</p>
+            <Button 
+              className="bg-green-500 hover:bg-green-400 text-white w-[100px]" 
+              onClick={() => setIsDoctorDeletionShown(false)}
+            >
+              Okay
+            </Button>
+          </div>
+        }
+      </div>
+
+      {/* Add Doctor Dialog */}
+      <Dialog open={showAddDoctor} onOpenChange={setShowAddDoctor}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register New Doctor</DialogTitle>
+            <DialogDescription>
+              Add a new healthcare professional to the platform. All fields are required.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={registerDoctor} className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={regForm.fullName}
+                    onChange={(e) => setRegForm({ ...regForm, fullName: e.target.value })}
+                    placeholder="Dr. John Smith"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">Date of Birth</Label>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={regForm.birthDate}
+                      onChange={(e) => setRegForm({ ...regForm, birthDate: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <select
+                      id="gender"
+                      value={regForm.gender}
+                      onChange={(e) => setRegForm({ ...regForm, gender: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      required
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Contact Number</Label>
+                    <Input
+                      id="contact"
+                      value={regForm.contact}
+                      onChange={(e) => setRegForm({ ...regForm, contact: e.target.value })}
+                      placeholder="+1 (555) 000-0000"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={regForm.email}
+                      onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+                      placeholder="doctor@medirehab.com"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={regForm.address}
+                    onChange={(e) => setRegForm({ ...regForm, address: e.target.value })}
+                    placeholder="Enter complete address"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={regForm.username}
+                    onChange={(e) => setRegForm({ ...regForm, username: e.target.value })}
+                    placeholder="jsmith"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={regForm.password}
+                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Registration Date</Label>
+                  <Input
+                    value={new Date().toISOString().split("T")[0]}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Input
+                    value="Doctor"
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowAddDoctor(false)}
+                disabled={registering}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={registering}>
+                {registering ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                    Registering...
+                  </>
+                ) : (
+                  "Register Doctor"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }

@@ -1,544 +1,902 @@
 'use client'
 
-import Content from "@/features/layout/Content";
-import { useParams, useRouter } from "next/navigation";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import type React from "react"
 
-type isVisibleProps = {
-    dashboard:boolean;
-    registerPatient:boolean;
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { Header } from "@/components/medirehab/header"
+import { StatCard } from "@/components/medirehab/stat-card"
+import { PatientCard } from "@/components/medirehab/patient-card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Users, ClipboardList, Plus, Search, UserPlus, Send, Trash2, X, LogOut, FileText, Activity } from "lucide-react"
+
+type Patient = {
+  patient_id: number
+  doctors_patient_id: number
+  patient: {
+    full_name: string
+  }
+  notes: string | null
 }
 
-const patients = [
-            {
-                name:"John Xerxes 2",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            },
-            {
-                name:"Edwin Squarepants 2",
-                birth:"08/14/2004",
-                gender:"male",
-                contactNumber:"09123456789",
-                email:"xerxes@gmail.com",
-                address:"3324 jennys avenue rosario pasig city",
-                profilePhoto:"xerxes pic",
-                registrationDate:"10/26/2025"
-            }
-        ]
-
-type patientProps = {
-    fullName?:string;
-    accountId?:string;
-    birthDate?:string;
-    gender?:string;
-    contact?:string;
-    email?:string;
-    address?:string;
-    profilePic?:string;
-    username?:string;
-    password?:string;
-    role?:string;
+type Exercise = {
+  exercise_id: number
+  exercise: string
+  description: string
+  image: string
+  filepath: string
 }
 
-type patientsProps = {
-    doctors_patient_id:string;
-    patient_id:string;
-    patient:{
-        full_name:string;
-    }
-    notes:string;
+type AssignedExercise = {
+  exercise_id: number
+  exercise: string
+  description: string
+  image: string
+  filepath: string
+  score: number | null
 }
 
-type exerciseProps = {
-    exercise_id:string;
-    exercise:string;
-    description:string;
+type EvaluationResult = {
+  result_id: number
+  score: number
+  feedback?: string
 }
 
-type resultImagesProps = {
-    image:string,
-    filepath:string
+type ResultImage = {
+  image: string
+  filepath: string
 }
 
-export default function Doctor(){
+export default function DoctorDashboard() {
+  const params = useParams<{ id: string }>()
+  const { id } = params
+  const router = useRouter()
 
-    const params = useParams<{ id:string }>();
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showRegisterForm, setShowRegisterForm] = useState(false)
+  const [showAssignExercise, setShowAssignExercise] = useState(false)
+  const [showPatientDetail, setShowPatientDetail] = useState(false)
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false)
+  const [showEvaluation, setShowEvaluation] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [name, setName] = useState("Doctor")
+  const [loading, setLoading] = useState(true)
 
-    //GET THE DOCTOR ID HERE
-    const { id } = params;
-    const router = useRouter();
-    const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerPatient:false});
-    const [showExercises, setShowExercises] = useState<boolean>(false);
-    const [exercises, setExercises] = useState<exerciseProps[]>([]);
-    const [showNotes, setShowNotes] = useState<boolean>(false);
-    const [note, setNote] = useState<string>("");
-    const [showUpdateButton, setShowUpdateButton] = useState<boolean>(false);
-    const [selectedPatient, setSelectedPatient] = useState<string>("");
-    const [selectedPatientIdByExercise, setSelectedPatientIdByExercise] = useState<string>("");
-    const [showTasks, setShowTasks] = useState<boolean>(false);
-    const [assignedTasks, setAssignedTasks] = useState<exerciseProps[]>([]);
-    const [showEvaluation, setShowEvaluation] = useState<boolean>(false);
-    const [isDescriptionVisible, setIsDescriptionVisible] = useState<boolean>(false);
-    const [patients, setPatients] = useState<patientsProps[]>([]);
-    const [patient, setPatient] = useState<patientProps>({role:"patient"});
-    const [resultImages, setResultImages] = useState<resultImagesProps[]>();
-    const [feedback, setFeedback] = useState<string>("");
-    const [selectedResultId, setSelectedResultId] = useState<string>("");
+  // For exercise assignment
+  const [availableExercises, setAvailableExercises] = useState<Exercise[]>([])
+  const [assignedExercises, setAssignedExercises] = useState<AssignedExercise[]>([])
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>("")
 
-    const logout = () => {
-        router.replace('/');
+  // For notes
+  const [patientNotes, setPatientNotes] = useState("")
+  const [noteText, setNoteText] = useState("")
+  const [savingNote, setSavingNote] = useState(false)
+
+  // For feedback and evaluation
+  const [evaluationResults, setEvaluationResults] = useState<EvaluationResult[]>([])
+  const [selectedResultId, setSelectedResultId] = useState<string>("")
+  const [feedbackText, setFeedbackText] = useState("")
+  const [resultImages, setResultImages] = useState<ResultImage[]>([])
+  const [currentResultId, setCurrentResultId] = useState<string>("")
+
+  // Registration form state
+  const [regForm, setRegForm] = useState({
+    fullName: "",
+    birthDate: "",
+    gender: "male",
+    contact: "",
+    email: "",
+    address: "",
+    profilePic: "",
+    username: "",
+    password: "",
+  })
+  const [registering, setRegistering] = useState(false)
+
+  useEffect(() => {
+    displayName()
+    listPatients()
+  }, [id])
+
+  const displayName = async () => {
+    try {
+      const res = await fetch("/api/display_name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (data.success) setName(data.name)
+    } catch (error) {
+      console.error("Error fetching name:", error)
     }
+  }
 
-    const listPatients = async () => {
-            const res = await fetch("/api/doctor/list_patient",{
-                method:'POST',
-                headers:{"Content-Type": 'application/json'},
-                body: JSON.stringify({id:id})
-            });
-
-            const data = await res.json();
-
-            if (data.success){
-                setPatients(data.patients);
-            }else{
-                setPatients([]);
-            }
-        }
-
-    useEffect(() => {
-        listPatients();
-    },[]);
-    
-    const loadExercises = async (patientId:string) => {
-        const res = await fetch("/api/doctor/load_exercises",{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({patientId:patientId})
-        });
-        const data = await res.json();
-
-        if(data.success){
-            setExercises(data.exercises);
-        }
+  const listPatients = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/doctor/list_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (data.success) setPatients(data.patients)
+    } catch (error) {
+      console.error("Error fetching patients:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    const assignExercise = async (patientId:string, exerciseId:string) => {
-        const res = await fetch("/api/doctor/assign_exercise",{
-            method:'POST',
-            headers:{'Content-Type': 'application/json'},
-            body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
-        });
-
-        const data = await res.json();
-
-        if(data.success){
-            loadExercises(patientId);
-        }
+  const registerPatient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegistering(true)
+    try {
+      const res = await fetch("/api/doctor/register_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...regForm,
+          role: "patient",
+          doctorId: id,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowRegisterForm(false)
+        setRegForm({
+          fullName: "",
+          birthDate: "",
+          gender: "male",
+          contact: "",
+          email: "",
+          address: "",
+          profilePic: "",
+          username: "",
+          password: "",
+        })
+        listPatients()
+      }
+    } catch (error) {
+      console.error("Error registering patient:", error)
+    } finally {
+      setRegistering(false)
     }
+  }
 
-    const loadAssignedExercise = async(patientId:string) => {
-        const res = await fetch("/api/doctor/load_assigned_exercise",{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({patientId:patientId})
-        });
-
-        const data = await res.json();
-
-        if(data.success){
-            setAssignedTasks(data.exercises);
-        }
+  const removePatient = async (patientId: number) => {
+    try {
+      const res = await fetch("/api/doctor/remove_patient", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId, doctorId: id }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPatients(data.patients)
+        setShowPatientDetail(false)
+        setSelectedPatient(null)
+      }
+    } catch (error) {
+      console.error("Error removing patient:", error)
     }
+  }
 
-    const registerPatient = async (e:FormEvent) => {
-            e.preventDefault();
-            try{
-                const res = await fetch("/api/doctor/register_patient", {
-                    method: "POST",
-                    headers:{"Content-Type":"application/json"},
-                    body: JSON.stringify({...patient, doctorId:id})
-                })
-                const data = await res.json();
-    
-                if (data.success) {
-                    setIsDescriptionVisible(false);
-                    listPatients();
-                } else{
-                    console.log("there is problem in patient registration!");
-                }
-            }catch(err){
-                console.error(err);  
-            }
-        };
+  const loadAvailableExercises = async (patientId: number) => {
+    try {
+      const res = await fetch("/api/doctor/load_exercises", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId }),
+      })
+      const data = await res.json()
+      if (data.success) setAvailableExercises(data.exercises)
+    } catch (error) {
+      console.error("Error loading exercises:", error)
+    }
+  }
 
-        const loadNote = async (visibility:boolean, id:string) => {
-            const res = await fetch("/api/doctor/load_note", {
-                method:'POST',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({id:id})
-            });
-            const data = await res.json();
+  const loadAssignedExercises = async (patientId: number) => {
+    try {
+      const res = await fetch("/api/doctor/load_assigned_exercise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId }),
+      })
+      const data = await res.json()
+      if (data.success) setAssignedExercises(data.exercises)
+    } catch (error) {
+      console.error("Error loading assigned exercises:", error)
+    }
+  }
 
-            if (data.success){
-                setNote(data.note);
-            }else{
-                setNote("");
-            }
+  const assignExercise = async () => {
+    if (!selectedPatient || !selectedExerciseId) return
+    try {
+      const res = await fetch("/api/doctor/assign_exercise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: selectedPatient.patient_id,
+          exerciseId: Number(selectedExerciseId),
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowAssignExercise(false)
+        setSelectedExerciseId("")
+        loadAssignedExercises(selectedPatient.patient_id)
+        loadAvailableExercises(selectedPatient.patient_id)
+      }
+    } catch (error) {
+      console.error("Error assigning exercise:", error)
+    }
+  }
 
-            setShowNotes(visibility);
-        } 
-        
-        const updateNote = async (id:string, note:string) => {
-            const res = await fetch("/api/doctor/update_note", {
-                method:'POST',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({id:id,note:note})
-            });
+  const removeAssignedExercise = async (exerciseId: number) => {
+    if (!selectedPatient) return
+    try {
+      const res = await fetch("/api/doctor/remove_assigned_exercise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: selectedPatient.patient_id,
+          exerciseId,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        loadAssignedExercises(selectedPatient.patient_id)
+        loadAvailableExercises(selectedPatient.patient_id)
+      }
+    } catch (error) {
+      console.error("Error removing exercise:", error)
+    }
+  }
 
-            const data = await res.json();
+  const loadPatientNote = async (doctorsPatientId: number) => {
+    try {
+      const res = await fetch("/api/doctor/load_note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: doctorsPatientId }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPatientNotes(data.note || "")
+        setNoteText(data.note || "")
+      }
+    } catch (error) {
+      console.error("Error loading note:", error)
+    }
+  }
 
-            if (data.success){
-                setNote(data.note);
-            }else{
-                setNote("");
-            }
+  const updatePatientNote = async () => {
+    if (!selectedPatient) return
+    setSavingNote(true)
+    try {
+      const res = await fetch("/api/doctor/update_note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedPatient.doctors_patient_id,
+          note: noteText,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPatientNotes(data.note)
+      }
+    } catch (error) {
+      console.error("Error updating note:", error)
+    } finally {
+      setSavingNote(false)
+    }
+  }
+
+  const checkEvaluation = async (exerciseId: number) => {
+    if (!selectedPatient) return
+    try {
+      const res = await fetch("/api/doctor/check_evaluation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: selectedPatient.patient_id,
+          exerciseId,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        if (data.existing) {
+          setShowEvaluation(true)
+          setShowPatientDetail(false)
+          setResultImages(data.resultImages || [])
+          setCurrentResultId(data.resultId || "")
+        } else {
+          setShowEvaluation(false)
+          // Show message that no evaluation exists
+          alert("No evaluation results available for this exercise.")
         }
+      }
+    } catch (error) {
+      console.error("Error checking evaluation:", error)
+    }
+  }
 
-        const removePatient = async (patientId:string) => {
-            const res = await fetch("/api/doctor/remove_patient",{
-                method:'POST',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({patientId:patientId, doctorId:id})
-            })
-            const data = await res.json();
+  const sendFeedback = async () => {
+    if (!currentResultId || !feedbackText) return
+    try {
+      const res = await fetch("/api/doctor/send_feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resultId: Number(currentResultId),
+          feedback: feedbackText,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setShowFeedbackForm(false)
+        setShowEvaluation(false)
+        setFeedbackText("")
+        setCurrentResultId("")
+        alert("Feedback sent successfully!")
+      }
+    } catch (error) {
+      console.error("Error sending feedback:", error)
+    }
+  }
 
-            if(data.success){
-                setPatients(data.patients);
-            }
-            console.log(data.message);
-        }
+  const openPatientDetail = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setShowPatientDetail(true)
+    loadPatientNote(patient.doctors_patient_id)
+    loadAssignedExercises(patient.patient_id)
+  }
 
-        const removeTask = async (patientId:string, exerciseId:string) => {
-            const res = await fetch("/api/doctor/remove_assigned_exercise", {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
-            });
+  const openAssignExercise = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setShowAssignExercise(true)
+    loadAvailableExercises(patient.patient_id)
+  }
 
-            const data = await res.json();
+  const logout = () => {
+    router.replace('/')
+  }
 
-            if(data.success){
-                loadAssignedExercise(patientId);
-            }
-        };
+  const filteredPatients = patients.filter((p) => p.patient.full_name.toLowerCase().includes(searchQuery.toLowerCase()))
 
-        const checkEvaluation = async (patientId:string, exerciseId:string) => {
-            const res = await fetch("/api/doctor/check_evaluation",{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({patientId:patientId,exerciseId:exerciseId})
-            });
+  return (
+    <div className="min-h-screen bg-background">
+      <Header
+        title="Doctor Dashboard"
+        subtitle={`Managing ${patients.length} patients`}
+        userName={name}
+        userRole="doctor"
+        onLogout={logout}
+      />
 
-            const data = await res.json();
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <StatCard label="Active Patients" value={patients.length} icon={<Users className="h-5 w-5" />} />
+          <StatCard
+            label="Total Exercises"
+            value={assignedExercises.length}
+            icon={<ClipboardList className="h-5 w-5" />}
+          />
+          <StatCard
+            label="Pending Evaluations"
+            value={0} // You can calculate this based on your data
+            icon={<Activity className="h-5 w-5" />}
+          />
+          <StatCard
+            label="Patient Notes"
+            value={patients.filter(p => p.notes).length}
+            icon={<FileText className="h-5 w-5" />}
+          />
+        </div>
 
-            if(data.success) {
-                if (data.existing){
-                    setShowEvaluation(true);
-                    setShowTasks(false);
-                    setResultImages(data.resultImages);
-                    setSelectedResultId(data.resultId);
-                }else {
-                    setShowEvaluation(false);
-                    setShowTasks(true);
-                }
-            }
-        }
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Patient List */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <h2 className="text-xl font-semibold text-foreground">My Patients</h2>
+              <div className="flex gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search patients..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button onClick={() => setShowRegisterForm(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Patient
+                </Button>
+              </div>
+            </div>
 
-        const sendFeedback = async (resultId:string, feedback:string) => {
-            const res = await fetch("/api/doctor/send_feedback", {
-                method:'POST',
-                headers:{'Content-Type': 'application/json'},
-                body: JSON.stringify({resultId:resultId, feedback:feedback})
-            });
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filteredPatients.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {filteredPatients.map((patient) => (
+                  <PatientCard
+                    key={patient.patient_id}
+                    id={String(patient.patient_id)}
+                    name={patient.patient.full_name}
+                    notes={patient.notes}
+                    onClick={() => openPatientDetail(patient)}
+                    onAssignExercise={() => openAssignExercise(patient)}
+                    onSendFeedback={() => {
+                      setSelectedPatient(patient)
+                      setShowFeedbackForm(true)
+                      loadAssignedExercises(patient.patient_id)
+                    }}
+                    onRemove={() => removePatient(patient.patient_id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="py-12">
+                <CardContent className="text-center">
+                  <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {searchQuery ? "No patients found" : "No patients yet"}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery ? "Try a different search term" : "Start by adding your first patient"}
+                  </p>
+                  {!searchQuery && (
+                    <Button onClick={() => setShowRegisterForm(true)}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Your First Patient
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-            const data = await res.json();
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => setShowRegisterForm(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Register New Patient
+                </Button>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={logout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
 
-            if(data.success){
-                setFeedback("");
-                console.log("feedback sent!");
-            }
-        }
+      {/* Register Patient Dialog */}
+      <Dialog open={showRegisterForm} onOpenChange={setShowRegisterForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register New Patient</DialogTitle>
+            <DialogDescription>Fill in the patient's information below. All fields are required.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={registerPatient} className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={regForm.fullName}
+                    onChange={(e) => setRegForm({ ...regForm, fullName: e.target.value })}
+                    placeholder="John Karl Crespo"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">Date of Birth</Label>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={regForm.birthDate}
+                      onChange={(e) => setRegForm({ ...regForm, birthDate: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={regForm.gender} onValueChange={(value) => setRegForm({ ...regForm, gender: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">Male</SelectItem>
+                        <SelectItem value="female">Female</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Contact Number</Label>
+                    <Input
+                      id="contact"
+                      value={regForm.contact}
+                      onChange={(e) => setRegForm({ ...regForm, contact: e.target.value })}
+                      placeholder="09123456789"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={regForm.email}
+                      onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+                      placeholder="johnkarlcrespo@gmail.com"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={regForm.address}
+                    onChange={(e) => setRegForm({ ...regForm, address: e.target.value })}
+                    placeholder="Medical Street 123 Sta. Rosa Manila"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profilePic">Profile Photo</Label>
+                  <Input
+                    id="profilePic"
+                    type="file"
+                    onChange={(e) => setRegForm({ ...regForm, profilePic: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
-    return (
-        <Content className="flex flex-col justify-start items-center bg-white w-sceen h-screen">
-            {/* NAVIGATION BAR */}
-            <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
-                <div className="flex justify-between items-center w-[22%] ">
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={regForm.username}
+                    onChange={(e) => setRegForm({ ...regForm, username: e.target.value })}
+                    placeholder="karljohn123"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={regForm.password}
+                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Registration Date</Label>
+                  <Input
+                    value={new Date().toISOString().split("T")[0]}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Input
+                    value="Patient"
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowRegisterForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={registering}>
+                {registering ? "Registering..." : "Register Patient"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Exercise Dialog */}
+      <Dialog open={showAssignExercise} onOpenChange={setShowAssignExercise}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Assign Exercise</DialogTitle>
+            <DialogDescription>Assign an exercise to {selectedPatient?.patient.full_name}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Exercise</Label>
+              <Select value={selectedExerciseId} onValueChange={setSelectedExerciseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an exercise" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableExercises.map((ex) => (
+                    <SelectItem key={ex.exercise_id} value={String(ex.exercise_id)}>
+                      {ex.exercise}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {availableExercises.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No exercises available. All exercises may already be assigned.
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignExercise(false)}>
+              Cancel
+            </Button>
+            <Button onClick={assignExercise} disabled={!selectedExerciseId}>
+              <Plus className="h-4 w-4 mr-2" />
+              Assign Exercise
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Patient Detail Dialog */}
+      <Dialog open={showPatientDetail} onOpenChange={setShowPatientDetail}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          {selectedPatient && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <DialogTitle>{selectedPatient.patient.full_name}</DialogTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => removePatient(selectedPatient.patient_id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              </DialogHeader>
+              <Tabs defaultValue="exercises" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="exercises">Assigned Exercises</TabsTrigger>
+                  <TabsTrigger value="notes">Notes</TabsTrigger>
+                </TabsList>
+                <TabsContent value="exercises">
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-3 pr-4">
+                      {assignedExercises.length > 0 ? (
+                        assignedExercises.map((ex) => (
+                          <Card key={ex.exercise_id}>
+                            <CardContent className="p-4 flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{ex.exercise}</p>
+                                <p className="text-sm text-muted-foreground">{ex.description}</p>
+                                {ex.score !== null && (
+                                  <Badge variant="outline" className="mt-2">
+                                    Score: {ex.score}%
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => checkEvaluation(ex.exercise_id)}>
+                                  Check Results
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive"
+                                  onClick={() => removeAssignedExercise(ex.exercise_id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">No exercises assigned yet</div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <Button
+                    className="mt-4"
                     onClick={() => {
-                        listPatients();
-                        setIsVisible({dashboard:true, registerPatient:false});
-                        }}>
-                        Dashboard
-                    </button>
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => setIsVisible({dashboard:false, registerPatient:true})}>
-                        Register Patient
-                    </button>
-                    <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => logout()}>
-                        Logout
-                    </button>
+                      setShowPatientDetail(false)
+                      openAssignExercise(selectedPatient)
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Assign Exercise
+                  </Button>
+                </TabsContent>
+                <TabsContent value="notes">
+                  <div className="space-y-4">
+                    {patientNotes && (
+                      <Card>
+                        <CardContent className="p-4">
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{patientNotes}</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Update Notes</Label>
+                      <Textarea
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        placeholder="Write your notes here..."
+                        rows={4}
+                      />
+                      <Button onClick={updatePatientNote} disabled={savingNote}>
+                        {savingNote ? "Saving..." : "Save Note"}
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Evaluation Dialog */}
+      <Dialog open={showEvaluation} onOpenChange={setShowEvaluation}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Exercise Evaluation</DialogTitle>
+            <DialogDescription>
+              Evaluation results for {selectedPatient?.patient.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              {resultImages.map((resultImage, index) => (
+                <div key={index} className="space-y-2">
+                  <Label>Result Image {index + 1}</Label>
+                  <div className="border rounded-lg p-4 bg-muted/50">
+                    <img 
+                      src={resultImage.image} 
+                      alt={`Evaluation result ${index + 1}`}
+                      className="w-full h-auto rounded-md"
+                    />
+                  </div>
                 </div>
+              ))}
             </div>
-
-            {/* DASHBOARD */}
-            <div className={`${isVisible['dashboard'] ? 'flex' : 'hidden'} justify-center items-center w-full h-full bg-white`}>
-                <div className="flex flex-col items-center w-[800px] h-[90%] bg-blue-50 rounded-2xl shadow-xl">
-                    <h1 className="flex justify-start items-center w-full h-[50px] bg-gray-50 rounded-tl-2xl rounded-tr-2xl pl-5 text-xl font-bold">
-                        Patient List
-                    </h1>
-                    <div className="flex flex-col items-center w-full h-full p-5">
-                        {patients.map(patient => 
-                        <div key={patient.patient_id} className="flex justify-between items-center p-3 w-full h-[50px] bg-blue-200 rounded-4xl mb-2 hover:bg-blue-100 cursor-pointer duration-200"
-                        onClick={() => {
-                            setSelectedPatientIdByExercise(patient['patient_id']);
-                            loadAssignedExercise(patient.patient_id);
-                            setShowTasks(true);
-                            }}>
-                            <h1>{patient['patient']['full_name']}</h1>
-                            <span className="flex items-center gap-2">
-                                <button className="text-[0.7em] bg-gray-200 rounded-4xl w-[50px] h-[30px] hover:bg-gray-100 cursor-pointer duration-200" 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedPatient(patient.doctors_patient_id);
-                                    loadNote(true, patient.doctors_patient_id);
-                                    }}>
-                                    Notes
-                                </button>
-                                <button className="text-[0.9em] bg-gray-100 rounded-4xl p-2 w-[110px] hover:bg-gray-50 cursor-pointer duration-200" 
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    setSelectedPatientIdByExercise(patient['patient_id']);
-                                    await loadExercises(patient['patient_id']);
-                                    setShowExercises(true);
-                                    }}>
-                                    Assign Task
-                                </button>
-                                <button className="text-[0.9em] bg-red-200 rounded-4xl p-2 w-[110px] hover:bg-red-100 cursor-pointer duration-200" 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    removePatient(patient['patient_id']);
-                                    }}>
-                                    Remove
-                                </button>
-                            </span>
-                        </div>
-                        )}
-                    </div>
-
-                    <div className={`${showTasks ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
-                        <div className="flex flex-col bg-gray-50 w-[500px] h-[400px] p-4 rounded-2xl">
-                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
-                                <h1 className="text-xl font-bold">Tasks</h1>
-                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
-                                onClick={() => setShowTasks(false)}>
-                                </button>
-                            </span>
-                            <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
-                                {/* Make this dynamically append inside this div */}
-                                {assignedTasks.map(exercise => 
-                                    <div className="flex justify-between items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2">
-                                    <h1 className="">{exercise['exercise']}</h1>
-                                    <span className="flex flex-row items-center gap-2 text-[0.8em]">
-                                        <button className="bg-green-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-green-300 duration-200" 
-                                        onClick={() => {
-                                            checkEvaluation(selectedPatientIdByExercise, exercise['exercise_id']);
-                                            }}>
-                                            Evaluation
-                                        </button>
-                                        <button className="bg-red-400 text-white p-1 pl-3 pr-3 rounded-2xl cursor-pointer hover:bg-red-300 duration-200" 
-                                        onClick={() => removeTask(selectedPatientIdByExercise, exercise['exercise_id'])}>
-                                            Remove
-                                        </button>
-                                    </span>
-                                </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`${showEvaluation ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
-                        <div className="flex flex-col bg-gray-50 w-[1000px] h-[700px] p-4 rounded-2xl">
-                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
-                                <h1 className="text-xl font-bold">Evaluation</h1>
-                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
-                                onClick={() => {
-                                    setShowTasks(true);
-                                    setShowEvaluation(false);
-                                    }}>
-                                </button>
-                            </span>
-                            <div className="flex justify-evenly items-center w-full h-[400px] bg-blue-100 rounded-2xl mt-2 p-4 mb-5">
-                                {/* Make this dynamically append inside this div */}
-                                {resultImages?.map(resultImage => 
-                                    <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImage.image}/>
-                                )}
-                            </div>
-                            <h1 className="mb-1 font-bold">Feedback</h1>
-                            <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300" value={feedback} onChange={(e) => setFeedback(e.target.value)}/>
-                            <span className="flex flex-col justify-end items-end w-full mt-3">    
-                                <button className="bg-blue-500 text-white rounded-4xl w-[100px] h-[35px] cursor-pointer hover:bg-blue-400 duration-200"
-                                onClick={(e) => sendFeedback(selectedResultId, feedback)}>
-                                    Send
-                                </button>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className={`${showNotes ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
-                        <div className="flex flex-col bg-gray-50 w-[500px] h-[400px] p-4 rounded-2xl">
-                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
-                                <h1 className="text-xl font-bold">Notes</h1>
-                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
-                                onClick={() => {
-                                    setShowNotes(false);
-                                    setShowUpdateButton(false);
-                                    }}>
-                                </button>
-                            </span>
-                            <textarea className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4 focus:outline-none resize-none" 
-                            value={note} onChange={(e) => setNote(e.target.value)}
-                            onFocus={() => setShowUpdateButton(true)}/>
-                            <span className={`${showUpdateButton ? 'flex' : 'hidden'} gap-3 mt-3 w-full justify-end items-center`}>
-                                <button className="bg-gray-200 rounded-4xl w-[100px] p-2 cursor-pointer hover:bg-gray-100 duration-200" 
-                                onClick={() => setShowUpdateButton(false)}>
-                                    Cancel
-                                </button>
-                                <button className="bg-blue-200 rounded-4xl w-[100px] p-2 cursor-pointer hover:bg-blue-100 duration-200" 
-                                onClick={() => {
-                                    // add a function that update to db here
-                                    updateNote(selectedPatient, note);
-                                    setShowUpdateButton(false);
-                                }}>
-                                    Update
-                                </button>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className={`${showExercises ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50`}>
-                        <div className="flex flex-col bg-gray-50 w-[500px] h-[400px] p-4 rounded-2xl">
-                            <span className="flex w-full flex-row justify-between items-center pl-2 pr-2">
-                                <h1 className="text-xl font-bold">Select Exercise</h1>
-                                <button className="bg-red-500 rounded-4xl text-red-500 text-[0.7em] cursor-pointer hover:bg-red-400 hover:text-red-400 w-[18px] h-[18px]" 
-                                onClick={() => setShowExercises(false)}>
-                                </button>
-                            </span>
-                            <div className="w-full h-full bg-blue-50 rounded-2xl mt-2 p-4">
-                                {/* Make this dynamically append inside this div */}
-                                {exercises?.map(exercise => 
-                                <div className="flex items-center w-full h-[50px] bg-gray-300 rounded-4xl p-4 hover:bg-gray-200 cursor-pointer duration-200 mb-2"
-                                onClick={() => assignExercise(selectedPatientIdByExercise, exercise['exercise_id'])}>
-                                    <h1 className="">{exercise['exercise']}</h1>
-                                </div>)}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="space-y-2">
+              <Label>Feedback</Label>
+              <Textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Write your feedback message..."
+                rows={4}
+              />
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEvaluation(false)}>
+                Close
+              </Button>
+              <Button onClick={sendFeedback} disabled={!feedbackText}>
+                <Send className="h-4 w-4 mr-2" />
+                Send Feedback
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-            {/* REGISTER PATIENT */}
-            <div className={`${isVisible['registerPatient'] ? 'flex' : 'hidden'} justify-center items-center w-full h-full bg-white`}>
-                <button className="bg-blue-50 rounded-[100px] w-[100px] h-[100px] border border-blue-50 hover:bg-white hover:border-blue-300 hover:cursor-pointer duration-200" onClick={() => setIsDescriptionVisible(true)}>
-                    Add
-                </button>
-                <div className={`${isDescriptionVisible ? 'flex' : 'hidden'} justify-center items-center w-full h-full inset-0 bg-black/50 absolute`}>
-                    <form onSubmit={registerPatient} className="flex flex-col bg-gray-50 w-[700px] h-[650px] rounded-2xl p-6 overflow-y-scroll">
-                        <span className="h-[90px] w-fit mb-4">
-                            <h1 className="text-2xl mb-2 font-bold">Register New Patient</h1>
-                            <h1 className="text-gray-500">Fill in the patient's information below. All fields are required.</h1>
-                        </span>
-                        <div className="flex flex-col w-full">
-                            <h1 className="text-xl mb-4">Personal Information</h1>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Full Name</label>
-                                <input onChange={(e) => setPatient({...patient, fullName:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="John Karl Crespo"/>
-                            </span>
-                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Date of Birth</label>
-                                    <input onChange={(e) => setPatient({...patient, birthDate:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date"/>
-                                </span>
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Gender</label>
-                                    <select onChange={(e) => setPatient({...patient, gender:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400">
-                                        <option value="">Select gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </span>
-                            </div>
-                            <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Contact Number</label>
-                                    <input onChange={(e) => setPatient({...patient, contact:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="09123456789" required/>
-                                </span>
-                                <span className="flex flex-col h-fit w-full">
-                                    <label className="mb-2 text-[0.9em] text-gray-600">Email Adress</label>
-                                    <input onChange={(e) => setPatient({...patient, email:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="johnkarlcrespo@gmail.com" required/>
-                                </span>
-                            </div>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Address</label>
-                                <input onChange={(e) => setPatient({...patient, address:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Medical Street 123 Sta. Rosa Manila" required/>
-                            </span>
-                            <span className="flex flex-col h-fit w-full mb-4">
-                                <label className="mb-2 text-[0.9em] text-gray-600">Profile Photo</label>
-                                <input onChange={(e) => setPatient({...patient, profilePic:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="file" required/>
-                            </span>
-                            <div className="w-full border-t border-gray-300 pt-5">
-                                <h1 className="text-xl mb-4">Account Information</h1>
-
-                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Username</label>
-                                        <input onChange={(e) => setPatient({...patient, username:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="karljohn123" required/>
-                                    </span>
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Password</label>
-                                        <input onChange={(e) => setPatient({...patient, password:e.target.value})} className="border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="password123" type="password" required/>
-                                    </span>
-                                </div>
-                                <div className="flex flex-row flex-nowrap gap-4 mb-4">
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Registration Date</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" type="date" value={`${new Date().toISOString().split("T")[0]}`} disabled required/>
-                                    </span>
-                                    <span className="flex flex-col h-fit w-full">
-                                        <label className="mb-2 text-[0.9em] text-gray-600">Role</label>
-                                        <input className="bg-gray-100 border border-gray-200 rounded-xl w-full h-[50px] p-2 focus:outline-none focus:border-blue-400" placeholder="Role" value="Patient" disabled required/>
-                                    </span>
-                                </div>
-                                <div className="flex flex-row justify-end items-center w-full h-fit gap-4">
-                                    <input className="border border-gray-300 rounded-xl p-3 text-gray-700 text-[0.9em] w-[80px] hover:bg-blue-400 hover:text-white hover:cursor-pointer duration-200" value="Cancel" 
-                                    onClick={() => setIsDescriptionVisible(false)} type="button"/>
-                                    <button type="submit" className="border border-gray-300 rounded-xl p-3 text-white text-[0.9em] w-[130px] bg-blue-400 hover:bg-blue-300 hover:cursor-pointer duration-200">
-                                        Register Patient
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+      {/* Send Feedback Dialog */}
+      <Dialog open={showFeedbackForm} onOpenChange={setShowFeedbackForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Feedback</DialogTitle>
+            <DialogDescription>
+              Send feedback for {selectedPatient?.patient.full_name}'s exercise results
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Exercise Result</Label>
+              <Select value={selectedResultId} onValueChange={setSelectedResultId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a result to give feedback" />
+                </SelectTrigger>
+                <SelectContent>
+                  {evaluationResults.map((result) => (
+                    <SelectItem key={result.result_id} value={String(result.result_id)}>
+                      Result ID: {result.result_id} - Score: {result.score}%
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {evaluationResults.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No evaluation results available. Check a patient's exercise first.
+                </p>
+              )}
             </div>
-        </Content>
-    );
+            <div className="space-y-2">
+              <Label>Feedback Message</Label>
+              <Textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Write your feedback message..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFeedbackForm(false)}>
+              Cancel
+            </Button>
+            <Button onClick={sendFeedback} disabled={!selectedResultId || !feedbackText}>
+              <Send className="h-4 w-4 mr-2" />
+              Send Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
 }

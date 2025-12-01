@@ -116,7 +116,7 @@ export default function Patient() {
     const closeRecord = () => setRecordMode(false);
 
     return (
-        <Content className="flex flex-col justify-center items-center w-screen h-screen bg-white p-5">
+        <Content className="flex flex-col justify-center items-center w-screen h-full bg-white p-5">
 
             <div className="flex justify-center items-center w-[22%] mb-5">
                 <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 duration-200" onClick={logout}>
@@ -125,11 +125,11 @@ export default function Patient() {
             </div>
 
             {/* Exercise Cards*/}
-            <div className="flex flex-wrap justify-start items-start w-full h-full gap-5">
+            <div className="flex flex-wrap justify-center items-center w-full h-fit gap-5">
                 {assignedExercises.map((exercise, i) => (
-                    <div key={i} className="flex flex-col justify-center items-center bg-blue-200 h-[300px] w-[283px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"
+                    <div key={i} className="flex flex-col justify-center items-center bg-blue-200 h-[400px] w-[400px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"
                         onClick={() => openDescription(exercise, exercise.id, exercise.assignId)}>
-                        <img src={exercise.image} className="w-full h-[200px] object-cover" />
+                        <img src={exercise.filepath} className="w-full h-[300px] object-cover rounded-2xl" />
                         <h1 className="flex flex-nowrap justify-center w-full">{exercise.exercise}</h1>
                     </div>
                 ))}

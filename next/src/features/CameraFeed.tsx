@@ -64,10 +64,15 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
       if (!canvas || !video) return;
 
       const ctx = canvas.getContext("2d");
+      if (!ctx) return;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.scale(-1, 1);
+      ctx.translate(-canvas.width, 0);
 
       if (typeof drawConnectors !== "undefined") {
         drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
@@ -78,15 +83,6 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
       if (typeof drawLandmarks !== "undefined") {
         drawLandmarks(ctx, results.poseLandmarks, { radius: 3 });
       }
-
-      // const parts = [
-      //   "LEFT_SHOULDER",
-      //   "RIGHT_SHOULDER",
-      //   "LEFT_ELBOW",
-      //   "RIGHT_ELBOW",
-      //   "LEFT_HIP",
-      //   "RIGHT_HIP",
-      // ];
 
       const keypoints = dataPoints.map((i, index) => ({
         part: parts[index],
@@ -127,7 +123,7 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
           ref={videoRef}
           autoPlay
           playsInline
-          className="rounded-xl shadow-lg h-full w-full"
+          className="rounded-xl shadow-lg h-full w-full transform scale-x-[-1]"
         />
 
         <canvas

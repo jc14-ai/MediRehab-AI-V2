@@ -47,6 +47,7 @@ export async function POST(req:Request){
 
         return NextResponse.json({success: true, exercises: exercises.map(exercise => ({
             id:exercise.assign?.[0].exercise_id,
+            assignId: exercise.assign?.[0].assign_id,
             exercise: exercise.exercise,
             description: exercise.description,
             image: exercise.exercise_image[0]?.image_name ?? null,

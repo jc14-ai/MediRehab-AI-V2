@@ -7,6 +7,7 @@ from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.optimizers import Adam
 import json
 import os
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -25,7 +26,7 @@ EXERCISES = {
         "anchor": "LEFT_KNEE",
         "center_keys": ["LEFT_KNEE", "RIGHT_KNEE", "LEFT_ANKLE", "RIGHT_ANKLE"],
         "train_csv": os.path.join(TRAINING_DIR, "calf_raise_hold_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "calf_raise_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "calf_raise_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "calf_raise_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "calf_raise_key_order.json"),
     },
@@ -34,7 +35,7 @@ EXERCISES = {
         "anchor": "LEFT_SHOULDER",
         "center_keys": ["LEFT_SHOULDER", "RIGHT_SHOULDER", "LEFT_WRIST", "RIGHT_WRIST", "LEFT_HIP", "RIGHT_HIP"],
         "train_csv": os.path.join(TRAINING_DIR, "chest_squeeze_hold_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "chest_squeeze_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "chest_squeeze_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "chest_squeeze_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "chest_squeeze_key_order.json"),
     },
@@ -43,7 +44,7 @@ EXERCISES = {
         "anchor": "LEFT_SHOULDER",
         "center_keys": ["LEFT_SHOULDER","RIGHT_SHOULDER","LEFT_HIP","RIGHT_HIP"],
         "train_csv": os.path.join(TRAINING_DIR, "front_arms_raise_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "front_arms_raise_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "front_arms_raise_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "front_arms_raise_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "front_arms_raise_key_order.json"),
     },
@@ -52,7 +53,7 @@ EXERCISES = {
         "anchor": "LEFT_SHOULDER",
         "center_keys": ["LEFT_SHOULDER","RIGHT_SHOULDER","LEFT_HIP","RIGHT_HIP"],
         "train_csv": os.path.join(TRAINING_DIR, "side_arms_raise_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "side_arms_raise_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "side_arms_raise_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "side_arms_raise_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "side_arms_raise_key_order.json"),
     },
@@ -61,7 +62,7 @@ EXERCISES = {
         "anchor": "LEFT_SHOULDER",
         "center_keys": ["LEFT_HIP","RIGHT_HIP","LEFT_KNEE","RIGHT_KNEE"],
         "train_csv": os.path.join(TRAINING_DIR, "squat_hold_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "squat_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "squat_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "squat_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "squat_key_order.json"),
     },
@@ -70,7 +71,7 @@ EXERCISES = {
         "anchor": "LEFT_SHOULDER",
         "center_keys": ["LEFT_HIP","RIGHT_HIP","LEFT_KNEE","RIGHT_KNEE"],
         "train_csv": os.path.join(TRAINING_DIR, "wall_sit_arm_hold_landmarks.csv"),
-        "test_csv": os.path.join(LANDMARKS_DIR, "wall_sit_landmarks_test.csv"),
+        "test_csv": os.path.join(LANDMARKS_DIR, "wall_sit_landmarks.csv"),
         "model_path": os.path.join(BASE_MODEL_DIR, "wall_sit_model.keras"),
         "key_order_path": os.path.join(BASE_KEYORDER_DIR, "wall_sit_key_order.json"),
     },
@@ -255,9 +256,10 @@ def route_evaluate(ex_name):
     if ex_name not in EXERCISES:
         return jsonify({"error": "unknown exercise"}), 404
     try:
-        acc = evaluate_exercise(ex_name)
+        acc = evaluate_exercise(ex_name) * 100
         return jsonify({"accuracy": acc, "exercise": ex_name})
     except Exception as e:
+        traceback.print_exc()  # prints full error in terminal
         return jsonify({"error": str(e)}), 500
 
 # Simple record endpoint (append rows). Expects frame = list of dicts

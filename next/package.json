@@ -11,6 +11,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/pose": "^0.5.1675469404",
     "@prisma/client": "^6.18.0",
     "@prisma/extension-accelerate": "^2.0.2",
     "dotenv": "^17.2.3",

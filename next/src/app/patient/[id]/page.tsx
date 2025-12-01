@@ -7,15 +7,28 @@ import { useEffect, useState } from "react";
 
 type AssignedExerciseProps = {
     id:string;
-    exercise: string,
-    description: string,
-    image: string,
-    filepath: string,
-    score: number
+    assignId:string;
+    exercise: string;
+    description: string;
+    image: string;
+    filepath: string;
+    score: number;
 }
 
 type ActivatedExerciseProps = {
     id: string;
+    nameConventions: {
+        exercise: string;
+        snakeName: string;
+    }
+    dataPoints:number[];
+    label:string;
+    parts:string[]
+}
+
+type ActivatedExerciseProps2 = {
+    id: string;
+    assignId:string;
     nameConventions: {
         exercise: string;
         snakeName: string;
@@ -35,7 +48,7 @@ export default function Patient() {
     const [description, setDescription] = useState("");
     const [score, setScore] = useState(0);
     const [assignedExercises, setAssignedExercises] = useState<AssignedExerciseProps[]>([]);
-    const [selectedExercise, setSelectedExercise] = useState<ActivatedExerciseProps>();
+    const [selectedExercise, setSelectedExercise] = useState<ActivatedExerciseProps2>();
 
     const exercises: ActivatedExerciseProps[] = [
         { id:"1", nameConventions:{ exercise:"side arms raise", snakeName:"side_arms_raise" }, dataPoints:[11,12,13,14,23,24], label:"SIDE ARMS RAISE HOLD", parts:["LEFT_SHOULDER","RIGHT_SHOULDER","LEFT_ELBOW","RIGHT_ELBOW","LEFT_HIP","RIGHT_HIP"]},
@@ -62,14 +75,21 @@ export default function Patient() {
         if(data.success) setAssignedExercises(data.exercises);
     }
 
-    const openDescription = (exercise: AssignedExerciseProps, exerciseId: string) => {
+    const openDescription = (exercise: AssignedExerciseProps, exerciseId: string, assignId:string) => {
         setDescription(exercise.description);
         setScore(exercise.score ?? 0);
         setShowDescription(true);
 
         console.log(exerciseId);
-        const fullEx = exercises.find(e => e.id === exerciseId.toString());
-        setSelectedExercise(fullEx);
+        let fullEx = exercises.find(e => e.id === exerciseId.toString());
+        
+        if (!fullEx) return;
+
+        const exWithAssignId: ActivatedExerciseProps2 = {
+            ...fullEx,
+            assignId: assignId
+        };
+        setSelectedExercise(exWithAssignId);
     }
 
     const openRecord = () => {
@@ -78,8 +98,18 @@ export default function Patient() {
         setRecordMode(true);
     }
 
-    const saveRecord = () => {
-        //TODO: IMPLEMENT THIS FEATURE
+    const evaluateRecord = async () => {
+        const res = await fetch("/api/patient/evaluate_record",{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({exercise:selectedExercise?.nameConventions.snakeName, assignId: selectedExercise?.assignId})
+        });
+
+        const data = await res.json();
+
+        if(data.success){
+            setRecordMode(false);
+        }
     }
 
     const closeDescription = () => setShowDescription(false);
@@ -98,7 +128,7 @@ export default function Patient() {
             <div className="flex flex-wrap justify-start items-start w-full h-full gap-5">
                 {assignedExercises.map((exercise, i) => (
                     <div key={i} className="flex flex-col justify-center items-center bg-blue-200 h-[300px] w-[283px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"
-                        onClick={() => openDescription(exercise, exercise.id)}>
+                        onClick={() => openDescription(exercise, exercise.id, exercise.assignId)}>
                         <img src={exercise.image} className="w-full h-[200px] object-cover" />
                         <h1 className="flex flex-nowrap justify-center w-full">{exercise.exercise}</h1>
                     </div>
@@ -134,7 +164,7 @@ export default function Patient() {
                             Cancel
                         </button>
                         <button className="bg-blue-600 text-white rounded-4xl p-2 w-[100px] hover:bg-blue-500 duration-200" 
-                        onClick={() => saveRecord()}>
+                        onClick={() => evaluateRecord()}>
                             Save
                         </button>
                     </div>

@@ -88,6 +88,7 @@ export default function Doctor(){
     const [patients, setPatients] = useState<patientsProps[]>([]);
     const [patient, setPatient] = useState<patientProps>({role:"patient"});
     const [resultImages, setResultImages] = useState<resultImagesProps[]>();
+    const [score, setScore] = useState<string>("0");
     const [feedback, setFeedback] = useState<string>("");
     const [selectedResultId, setSelectedResultId] = useState<string>("");
 
@@ -252,6 +253,7 @@ export default function Doctor(){
                     setShowEvaluation(true);
                     setShowTasks(false);
                     setResultImages(data.resultImages);
+                    setScore(data.score);
                     setSelectedResultId(data.resultId);
                 }else {
                     setShowEvaluation(false);
@@ -391,6 +393,7 @@ export default function Doctor(){
                                     <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImage.image}/>
                                 )}
                             </div>
+                            <h1>{score}</h1>
                             <h1 className="mb-1 font-bold">Feedback</h1>
                             <textarea className="resize-none rounded-2xl p-2 focus:outline-none border border-gray-300" value={feedback} onChange={(e) => setFeedback(e.target.value)}/>
                             <span className="flex flex-col justify-end items-end w-full mt-3">    

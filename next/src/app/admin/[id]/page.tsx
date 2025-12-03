@@ -128,6 +128,7 @@ export default function Admin(){
     const [doctors, setDoctors] = useState<doctorsProps[]>();
     const [doctor, setDoctor] = useState<doctorProps>({role:"doctor"});
     const [totalPatients, setTotalPatients] = useState<number>(0);
+    const [numberOfExercises, setNumberOfExercises] = useState<number>(0);
 
     const logout = () => {
         router.replace('/');
@@ -195,7 +196,17 @@ export default function Admin(){
     useEffect(()=>{
         listDoctors();
         countPatients();
+        countExercises();
     }, [])
+
+    const countExercises = async () => {
+        const res = await fetch('/api/admin/count_exercises');
+        const data = await res.json();
+
+        if(data.success){
+            setNumberOfExercises(data.numberOfExercises);
+        }
+    }
 
     const showPatients = (visible:boolean) =>{
         setIsPatientListVisible(visible);
@@ -244,7 +255,11 @@ export default function Admin(){
             <div className="flex justify-center items-center bg-blue-300 w-screen h-[70px]">
                 <div className="flex justify-between items-center w-[35%] ">
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-                    onClick={() => setIsVisible({dashboard:true, registerDoctor:false, doctorList:false})}>
+                    onClick={() => {
+                        setIsVisible({dashboard:true, registerDoctor:false, doctorList:false});
+                        countExercises();
+                        countPatients();
+                        }}>
                         Dashboard
                     </button>
                     <button className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
@@ -279,6 +294,14 @@ export default function Admin(){
                         {doctors?.length}
                     </div>
                     <h1 className="text-xl">No. of Doctors</h1>
+                </span>
+                {/* number of exercises */}
+                <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
+                    {/* APPEND HERE THE COUNT OF EXERCISES FROM DATABASE*/}
+                    <div className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
+                        {numberOfExercises}
+                    </div>
+                    <h1 className="text-xl">No. of Exercises</h1>
                 </span>
             </div>
 

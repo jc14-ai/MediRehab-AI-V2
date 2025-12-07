@@ -14,8 +14,48 @@ export async function POST(req:Request){
                 assign_id:true
             }
         });
-
+        
         if(!assignedExercise) return NextResponse.json({success:false, message:'Assigned exercise not found.'});
+
+        const result = await prisma.result.findFirst({
+            where:{
+                assign_id:assignedExercise.assign_id
+            }
+        })
+
+        if(!result) return NextResponse.json({success:false, message:'Result not found.'});
+
+        const resultImageDeleted = await prisma.result_image.deleteMany({
+            where:{
+                result_id:result.result_id
+            }
+        });
+
+        if(!resultImageDeleted) return NextResponse.json({success:false, message:'Image/s not deleted.'});
+
+        const feedback = await prisma.feedback.findFirst({
+            where:{
+                result_id:result.result_id
+            }
+        });
+
+        if (!feedback) return NextResponse.json({success:false, message:'Feedback not found'});
+
+        const feedbackDeleted = await prisma.feedback.delete({
+            where:{
+                feedback_id:feedback.feedback_id
+            }
+        })
+
+        if (!feedbackDeleted) return NextResponse.json({success:false, message:'Feedback not deleted'});
+
+        const resultDeleted = await prisma.result.delete({
+            where:{
+                result_id:result.result_id
+            }
+        })
+
+        if (!resultDeleted) return NextResponse.json({success:false, message:'Result not deleted.'});
 
         const assignedExerciseDeleted = await prisma.assign.delete({
             where:{

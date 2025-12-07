@@ -4,33 +4,66 @@ import { useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
   exercise: string;
-  dataPoints:number[];
-  label:string;
-  parts:string[];
+  dataPoints: number[];
+  label: string;
+  parts: string[];
+  patientId:string;
+  assignId:string;
+  resultId:string;
 };
 
 declare const drawConnectors: any;
 declare const drawLandmarks: any;
 
-export default function CameraFeed({ exercise, dataPoints, label, parts }: CameraFeedProps) {
+export default function CameraFeed({ exercise, dataPoints, label, parts, patientId, assignId, resultId }: CameraFeedProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const cameraRef = useRef<any>(null);
 
+  // Timers
+  const screenshotIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const stopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const script = document.createElement("script");
-    script.src =
-      "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js";
+    script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js";
     script.async = true;
     document.body.appendChild(script);
   }, []);
 
+  const takeScreenshot = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0);
+
+    const imageData = canvas.toDataURL("image/png");
+
+    await fetch("/api/save-screenshot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: imageData, patientId: patientId, assignId:assignId, resultId:resultId}),
+    });
+  };
+
   const toggleCamera = async () => {
+    // Stop camera logic
     if (isRunning) {
       cameraRef.current?.stop();
       cameraRef.current = null;
       setIsRunning(false);
+
+      if (screenshotIntervalRef.current) clearInterval(screenshotIntervalRef.current);
+      if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+
       return;
     }
 
@@ -44,8 +77,7 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
     const Camera = cameraModule.default || cameraModule;
 
     const pose = new Pose.Pose({
-      locateFile: (file: string) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
     });
 
     pose.setOptions({
@@ -65,6 +97,7 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
 
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
@@ -75,9 +108,7 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
       ctx.translate(-canvas.width, 0);
 
       if (typeof drawConnectors !== "undefined") {
-        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, {
-          lineWidth: 4,
-        });
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { lineWidth: 4 });
       }
 
       if (typeof drawLandmarks !== "undefined") {
@@ -107,6 +138,16 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
       });
       cameraRef.current.start();
     }
+
+    // Every 10 seconds: take screenshot
+    screenshotIntervalRef.current = setInterval(() => {
+      takeScreenshot();
+    }, 10000);
+
+    // Stop after 30 seconds
+    stopTimeoutRef.current = setTimeout(() => {
+      toggleCamera();
+    }, 30000);
   };
 
   return (
@@ -125,11 +166,7 @@ export default function CameraFeed({ exercise, dataPoints, label, parts }: Camer
           playsInline
           className="rounded-xl shadow-lg h-full w-full transform scale-x-[-1]"
         />
-
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full"
-        />
+        <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full" />
       </div>
     </div>
   );

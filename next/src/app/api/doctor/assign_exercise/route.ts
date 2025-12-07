@@ -13,6 +13,15 @@ export async function POST(req:Request){
         });
 
         if(!assigned) return NextResponse.json({success:false, message:'Exercise not assigned to patient.'});
+
+        const result = await prisma.result.create({
+            data:{
+                assign_id:assigned.assign_id,
+                score: 0
+            }
+        });
+
+        if(!result) return NextResponse.json({success:false, message:'Result not initialized.'});
         
         return NextResponse.json({success:true, message:'Exercise assigned to the patient successfully.'});
     } catch (error) {

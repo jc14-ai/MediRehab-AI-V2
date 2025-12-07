@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 type AssignedExerciseProps = {
     id:string;
+    resultId:string;
     assignId:string;
     exercise: string;
     description: string;
@@ -28,6 +29,7 @@ type ActivatedExerciseProps = {
 
 type ActivatedExerciseProps2 = {
     id: string;
+    resultId:string;
     assignId:string;
     nameConventions: {
         exercise: string;
@@ -61,6 +63,10 @@ export default function Patient() {
 
     useEffect(() => {
         listAssignedExercises();
+        
+        return () => {
+            // cleanup if needed
+        };
     }, []);
 
     const logout = () => router.replace("/");
@@ -72,25 +78,25 @@ export default function Patient() {
             body: JSON.stringify({patientId:id})
         });
         const data = await res.json();
+        console.log(data)
         if(data.success) setAssignedExercises(data.exercises);
     }
 
-    const openDescription = (exercise: AssignedExerciseProps, exerciseId: string, assignId:string) => {
+    const openDescription = (exercise: AssignedExerciseProps) => {
         setDescription(exercise.description);
         setScore(exercise.score ?? 0);
         setShowDescription(true);
 
-        console.log(exerciseId);
-        let fullEx = exercises.find(e => e.id === exerciseId.toString());
-        
+        const fullEx = exercises.find(e => e.id === exercise.id);
         if (!fullEx) return;
 
         const exWithAssignId: ActivatedExerciseProps2 = {
             ...fullEx,
-            assignId: assignId
+            assignId: exercise.assignId,
+            resultId: exercise.resultId ?? "0",
         };
         setSelectedExercise(exWithAssignId);
-    }
+    };
 
     const openRecord = () => {
         if (!selectedExercise) return;
@@ -102,7 +108,7 @@ export default function Patient() {
         const res = await fetch("/api/patient/evaluate_record",{
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({exercise:selectedExercise?.nameConventions.snakeName, assignId: selectedExercise?.assignId})
+            body: JSON.stringify({exercise:selectedExercise?.nameConventions.snakeName, resultId: selectedExercise?.resultId})
         });
 
         const data = await res.json();
@@ -128,7 +134,7 @@ export default function Patient() {
             <div className="flex flex-wrap justify-center items-center w-full h-fit gap-5">
                 {assignedExercises.map((exercise, i) => (
                     <div key={i} className="flex flex-col justify-center items-center bg-blue-200 h-[400px] w-[400px] gap-5 rounded-4xl hover:cursor-pointer hover:bg-blue-100 duration-200 p-4"
-                        onClick={() => openDescription(exercise, exercise.id, exercise.assignId)}>
+                        onClick={() => openDescription(exercise)}>
                         <img src={exercise.filepath} className="w-full h-[300px] object-cover rounded-2xl" />
                         <h1 className="flex flex-nowrap justify-center w-full">{exercise.exercise}</h1>
                     </div>
@@ -156,7 +162,7 @@ export default function Patient() {
                 <div className="flex flex-col justify-center items-center bg-gray-50 w-[1200px] h-[700px] rounded-2xl">
                     {selectedExercise && (
                         <CameraFeed exercise={selectedExercise.nameConventions.snakeName} parts={selectedExercise.parts}
-                        dataPoints={selectedExercise.dataPoints} label={selectedExercise.label} />
+                        dataPoints={selectedExercise.dataPoints} label={selectedExercise.label} patientId={id} assignId={selectedExercise.assignId} resultId={selectedExercise.resultId}/>
                     )}
                     <div className="flex flex-row gap-5 p-5">
                         <button className="bg-gray-700 text-white rounded-4xl p-2 w-[100px] hover:bg-gray-600 duration-200" 

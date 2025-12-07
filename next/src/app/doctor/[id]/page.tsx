@@ -388,10 +388,14 @@ export default function Doctor(){
                                 </button>
                             </span>
                             <div className="flex justify-evenly items-center w-full h-[400px] bg-blue-100 rounded-2xl mt-2 p-4 mb-5">
-                                {/* Make this dynamically append inside this div */}
+                                <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImages?.[1].filepath}/>
+                                <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImages?.[2].filepath}/>
+                                <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImages?.[3].filepath}/>
+                                
+                                {/* Make this dynamically append inside this div
                                 {resultImages?.map(resultImage => 
-                                    <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImage.image}/>
-                                )}
+                                    <img className="bg-black rounded-2xl w-[250px] h-full" src={resultImage.filepath}/>
+                                )} */}
                             </div>
                             <h1>{score}</h1>
                             <h1 className="mb-1 font-bold">Feedback</h1>

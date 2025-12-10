@@ -22,7 +22,8 @@ export async function POST(req:Request){
                 assign_id:assignedExercise.assign_id
             },
             select:{
-                result_id:true
+                result_id:true,
+                score:true
             }
         });
 
@@ -40,7 +41,7 @@ export async function POST(req:Request){
 
         if(!resultImages) return ({success:false, existing:true, message: "No resulting images."});
 
-        return NextResponse.json({success:true, existing: true, resultImages:resultImages.map(resultImages => {
+        return NextResponse.json({success:true, existing: true, score:existing.score, resultImages:resultImages.map(resultImages => {
             return {image:resultImages.image_name, filepath:resultImages.filepath}
         }), resultId:existing.result_id});
     } catch (error) {

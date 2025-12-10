@@ -1,8 +1,7 @@
-'use client'
+"use client"
 
 import type React from "react"
-
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Header } from "@/components/medirehab/header"
 import { StatCard } from "@/components/medirehab/stat-card"
@@ -20,8 +19,9 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Users, UserCheck, Plus, Search, MoreHorizontal, Trash2, LogOut, Eye } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Plus, Search, Eye, Users, UserPlus, Activity, Stethoscope, LayoutDashboard } from "lucide-react"
 
 interface Doctor {
   doctor_id: number
@@ -36,51 +36,43 @@ interface Doctor {
 interface Patient {
   patient: {
     account: {
-      registration_date: string;
-    };
-    gender: 'male' | 'female' | 'other' | '';
-    contact: string;
-    email: string;
-    address: string;
-    full_name: string;
-    birth_date: string;
-    account_id: string;
-  };
-  patient_id: string;
-  notes: string | null;
-}
-
-interface isVisibleProps {
-  dashboard: boolean;
-  registerDoctor: boolean;
-  doctorList: boolean;
+      registration_date: string
+    }
+    gender: "male" | "female" | "other" | ""
+    contact: string
+    email: string
+    address: string
+    full_name: string
+    birth_date: string
+    account_id: string
+  }
+  patient_id: string
+  notes: string | null
 }
 
 export default function AdminDashboard() {
-  const params = useParams<{ id: string }>()
   const router = useRouter()
 
   const [totalPatients, setTotalPatients] = useState(0)
+  const [numberOfExercises, setNumberOfExercises] = useState(0)
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [showAddDoctor, setShowAddDoctor] = useState(false)
-  const [isVisible, setIsVisible] = useState<isVisibleProps>({dashboard:true, registerDoctor:false, doctorList:false})
+  const [activeTab, setActiveTab] = useState("dashboard")
   const [isPatientListVisible, setIsPatientListVisible] = useState<boolean>(false)
   const [patients, setPatients] = useState<Patient[]>([])
   const [isDoctorDeletionShown, setIsDoctorDeletionShown] = useState<boolean>(false)
-  const [havePatients, setHavePatients] = useState<{havePatients: boolean; doctorId?: string}>()
+  const [havePatients, setHavePatients] = useState<{ havePatients: boolean; doctorId?: string }>()
   const [patientDesc, setPatientDesc] = useState<Patient>()
-
-  // Registration form
-  const [regForm, setRegForm] = useState({
-    fullName: "",
+  const [doctor, setDoctor] = useState({
+    role: "doctor",
+    fullname: "",
     birthDate: "",
-    gender: "male",
+    gender: "",
     contact: "",
     email: "",
     address: "",
-    profilePic: "",
     username: "",
     password: "",
   })
@@ -88,6 +80,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData()
+    countExercises()
   }, [])
 
   const fetchData = async () => {
@@ -95,7 +88,7 @@ export default function AdminDashboard() {
     try {
       const [patientsRes, doctorsRes] = await Promise.all([
         fetch("/api/admin/list_patient"),
-        fetch("/api/admin/register_doctor"), // GET returns all doctors
+        fetch("/api/admin/register_doctor"),
       ])
 
       const patientsData = await patientsRes.json()
@@ -114,6 +107,24 @@ export default function AdminDashboard() {
     }
   }
 
+  const countPatients = async () => {
+    const res = await fetch("/api/admin/list_patient")
+    const data = await res.json()
+
+    if (data.success) {
+      setTotalPatients(data.totalPatients)
+    }
+  }
+
+  const countExercises = async () => {
+    const res = await fetch("/api/admin/count_exercises")
+    const data = await res.json()
+
+    if (data.success) {
+      setNumberOfExercises(data.numberOfExercises)
+    }
+  }
+
   const registerDoctor = async (e: React.FormEvent) => {
     e.preventDefault()
     setRegistering(true)
@@ -121,27 +132,24 @@ export default function AdminDashboard() {
       const res = await fetch("/api/admin/register_doctor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...regForm,
-          role: "doctor",
-        }),
+        body: JSON.stringify(doctor),
       })
       const data = await res.json()
       if (data.success) {
         setShowAddDoctor(false)
-        setRegForm({
-          fullName: "",
+        setDoctor({
+          role: "doctor",
+          fullname: "",
           birthDate: "",
-          gender: "male",
+          gender: "",
           contact: "",
           email: "",
           address: "",
-          profilePic: "",
           username: "",
           password: "",
         })
         fetchData()
-        setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})
+        setActiveTab("doctors")
       } else {
         console.error("Registration failed:", data.message)
       }
@@ -152,31 +160,11 @@ export default function AdminDashboard() {
     }
   }
 
-  const removeDoctor = async (doctorId: number) => {
-    if (!confirm("Are you sure you want to remove this doctor?")) return
-    
-    try {
-      const res = await fetch("/api/admin/remove_doctor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorId }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        fetchData()
-      } else {
-        console.error("Failed to remove doctor:", data.message)
-      }
-    } catch (error) {
-      console.error("Error removing doctor:", error)
-    }
-  }
-
   const listPatients = async (visible: boolean, doctorId: string) => {
     const res = await fetch("/api/admin/list_patient", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({doctorId: doctorId})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorId: doctorId }),
     })
 
     const data = await res.json()
@@ -189,17 +177,17 @@ export default function AdminDashboard() {
 
     const res = await fetch("/api/admin/list_patient", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({doctorId: doctorId})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorId: doctorId }),
     })
 
     const data = await res.json()
 
     if (data.success) {
       if (!data.patients || data.patients.length < 1) {
-        setHavePatients({havePatients: false, doctorId: doctorId})
+        setHavePatients({ havePatients: false, doctorId: doctorId })
       } else {
-        setHavePatients({havePatients: true, doctorId: doctorId})
+        setHavePatients({ havePatients: true, doctorId: doctorId })
       }
     }
   }
@@ -207,25 +195,20 @@ export default function AdminDashboard() {
   const deleteDoctor = async (doctorId: string) => {
     const res = await fetch("/api/admin/remove_doctor", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({doctorId: doctorId})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorId: doctorId }),
     })
-    
+
     const data = await res.json()
-    
+
     if (data.success) {
       fetchData()
       setIsDoctorDeletionShown(false)
     }
   }
 
-  const showPatients = (visible: boolean) => {
-    setIsPatientListVisible(visible)
-    setPatients([])
-  }
-
   const logout = () => {
-    router.replace('/')
+    router.replace("/")
   }
 
   const filteredDoctors = doctors.filter(
@@ -237,304 +220,320 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar */}
-      <div className="flex justify-center items-center bg-blue-300 w-full h-[70px]">
-        <div className="flex justify-between items-center w-[35%]">
-          <button 
-            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-            onClick={() => setIsVisible({dashboard:true, registerDoctor:false, doctorList:false})}
-          >
-            Dashboard
-          </button>
-          <button 
-            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-            onClick={() => setIsVisible({dashboard:false, registerDoctor:true, doctorList:false})}
-          >
-            Register Doctor
-          </button>
-          <button 
-            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200" 
-            onClick={() => setIsVisible({dashboard:false, registerDoctor:false, doctorList:true})}
-          >
-            Registered Doctor List
-          </button>
-          <button 
-            className="bg-gray-200 border border-gray-400 rounded-xl p-3 hover:bg-gray-100 hover:cursor-pointer duration-200"
-            onClick={() => logout()}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+      <Header
+        title="Admin Dashboard"
+        subtitle={`Managing ${doctors.length} doctors, ${totalPatients} patients`}
+        userName="Administrator"
+        userRole="admin"
+        onLogout={logout}
+      />
 
-      {/* Dashboard View */}
-      <div className={`${isVisible.dashboard ? 'flex' : 'hidden'} justify-evenly items-center bg-gray-200 w-full h-full`}>
-        <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
-          <h1 className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-            {totalPatients}
-          </h1>
-          <h1 className="text-xl">No. of Patients</h1>
-        </span>
-        <span className="flex flex-col justify-evenly items-center h-[300px] w-[300px]">
-          <div className="flex flex-row justify-center items-center bg-gray-100 h-[200px] w-[200px] rounded-xl text-4xl hover:bg-white hover:cursor-pointer duration-200">
-            {doctors.length}
-          </div>
-          <h1 className="text-xl">No. of Doctors</h1>
-        </span>
-      </div>
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="register" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Register</span>
+            </TabsTrigger>
+            <TabsTrigger value="doctors" className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              <span className="hidden sm:inline">Doctors</span>
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Register Doctor View */}
-      <div className={`${isVisible.registerDoctor ? 'flex' : 'hidden'} justify-center items-center bg-gray-200 w-full h-full`}>
-        <button 
-          className="bg-blue-50 rounded-[100px] w-[100px] h-[100px] border border-blue-50 hover:bg-white hover:border-blue-300 hover:cursor-pointer duration-200" 
-          onClick={() => setShowAddDoctor(true)}
-        >
-          Add
-        </button>
-      </div>
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <StatCard label="Total Patients" value={totalPatients} icon={<Users className="h-5 w-5" />} />
+              <StatCard label="Registered Doctors" value={doctors.length} icon={<Stethoscope className="h-5 w-5" />} />
+              <StatCard label="Available Exercises" value={numberOfExercises} icon={<Activity className="h-5 w-5" />} />
+            </div>
 
-      {/* Registered Doctor List View */}
-      <div className={`${isVisible.doctorList ? 'block' : 'hidden'} bg-gray-200 w-full min-h-screen p-8`}>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div>
-                <CardTitle>Doctor Management</CardTitle>
-                <CardDescription>
-                  {doctors.length} doctor{doctors.length !== 1 ? 's' : ''} registered in the system
-                </CardDescription>
-              </div>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search doctors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Button onClick={() => setShowAddDoctor(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Doctor
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Common administrative tasks</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-3">
+                <Button onClick={() => setActiveTab("register")}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Register New Doctor
                 </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="ml-2 text-muted-foreground">Loading doctors...</span>
-              </div>
-            ) : filteredDoctors.length > 0 ? (
-              <ScrollArea className="h-[400px] rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Doctor Information</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead className="w-[200px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredDoctors.map((doctor) => (
-                      <TableRow key={doctor.doctor_id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                              {doctor.full_name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{doctor.full_name}</p>
-                              <p className="text-sm text-muted-foreground">{doctor.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            @{doctor.account?.username}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{doctor.contact}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => listPatients(true, doctor.doctor_id.toString())}
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Patients
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => displayDoctorDeletion(doctor.doctor_id.toString(), true)}
-                            >
-                              Unregister
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            ) : (
-              <div className="text-center py-12">
-                <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {searchQuery ? "No doctors found" : "No doctors registered"}
-                </h3>
-                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                  {searchQuery 
-                    ? "Try adjusting your search terms to find what you're looking for." 
-                    : "Get started by adding the first healthcare professional to the platform."
-                  }
-                </p>
-                {!searchQuery && (
-                  <Button onClick={() => setShowAddDoctor(true)} size="lg">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Doctor
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                <Button variant="outline" onClick={() => setActiveTab("doctors")}>
+                  <Users className="h-4 w-4 mr-2" />
+                  View All Doctors
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-      {/* Patient List Modal */}
-      {patients.length > 0 && (
-        <div className={`${isPatientListVisible ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50 z-50`} 
-          onClick={() => showPatients(false)}>
-          <div className="bg-gray-100 w-[500px] h-[600px] rounded-xl p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Patient List</h2>
-              <Button variant="outline" onClick={() => showPatients(false)}>Close</Button>
-            </div>
-            <ScrollArea className="h-[500px]">
-              {patients.map(patient => (
-                <div key={patient.patient_id} className="flex justify-between items-center bg-blue-200 mb-2 rounded-2xl w-full p-3 hover:bg-blue-100 hover:cursor-pointer duration-200">
-                  <h1 className="bg-gray-50 rounded-4xl px-3 py-1">{patient.patient.full_name}</h1>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setPatientDesc(patient)}
-                  >
-                    View
-                  </Button>
+          {/* Register Doctor Tab */}
+          <TabsContent value="register" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Register New Doctor</CardTitle>
+                <CardDescription>Add a new healthcare professional to the platform</CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center py-12">
+                <Button size="lg" className="h-24 w-24 rounded-full" onClick={() => setShowAddDoctor(true)}>
+                  <Plus className="h-8 w-8" />
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Doctors List Tab */}
+          <TabsContent value="doctors" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                  <div>
+                    <CardTitle>Doctor Management</CardTitle>
+                    <CardDescription>
+                      {doctors.length} doctor{doctors.length !== 1 ? "s" : ""} registered in the system
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search doctors..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <Button onClick={() => setShowAddDoctor(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Doctor
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </ScrollArea>
-          </div>
-        </div>
-      )}
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span className="ml-2 text-muted-foreground">Loading doctors...</span>
+                  </div>
+                ) : filteredDoctors.length > 0 ? (
+                  <ScrollArea className="h-[400px] rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Doctor Information</TableHead>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead className="w-[200px]">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredDoctors.map((doctor) => (
+                          <TableRow key={doctor.doctor_id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                                    {doctor.full_name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-foreground">{doctor.full_name}</p>
+                                  <p className="text-sm text-muted-foreground">{doctor.email}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                @{doctor.account?.username}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{doctor.contact}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => listPatients(true, doctor.doctor_id.toString())}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Patients
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => displayDoctorDeletion(doctor.doctor_id.toString(), true)}
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      {searchQuery ? "No doctors found" : "No doctors registered"}
+                    </h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                      {searchQuery
+                        ? "Try adjusting your search terms to find what you're looking for."
+                        : "Get started by adding the first healthcare professional to the platform."}
+                    </p>
+                    {!searchQuery && (
+                      <Button onClick={() => setShowAddDoctor(true)} size="lg">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add First Doctor
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
 
-      {/* Patient Details Modal */}
-      {patientDesc && (
-        <div className="flex justify-center items-center fixed inset-0 bg-black/50 z-50" 
-          onClick={() => setPatientDesc(undefined)}>
-          <div className="flex flex-col justify-start bg-gray-100 rounded-2xl w-[400px] h-[500px] p-4" onClick={(e) => e.stopPropagation()}>
-            <h1 className="text-2xl font-bold mb-4">Patient Information</h1>
-            <div className="flex flex-row items-center w-full h-[140px] p-2 border-b border-gray-300">
-              <div className="h-[100px] w-[100px] rounded-[150px] bg-primary/10 flex items-center justify-center text-primary font-medium text-2xl">
-                {patientDesc.patient.full_name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()}
+      {/* Patient List Dialog */}
+      <Dialog open={isPatientListVisible} onOpenChange={setIsPatientListVisible}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Patient List</DialogTitle>
+            <DialogDescription>Patients assigned to this doctor</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {patients.length > 0 ? (
+              <div className="space-y-2">
+                {patients.map((patient) => (
+                  <div
+                    key={patient.patient_id}
+                    className="flex justify-between items-center p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {patient.patient.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{patient.patient.full_name}</span>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setPatientDesc(patient)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <span className="ml-4 h-fit w-fit">
-                <h1 className="text-xl font-bold">{patientDesc.patient.full_name}</h1>
-                <h1 className="text-gray-700 capitalize">{patientDesc.patient.gender}</h1>
-              </span>
-            </div>
-            <div className="flex flex-col w-full h-full pt-4 gap-4">
-              <div className="flex flex-row">
-                <span className="ml-3">
-                  <h1 className="text-gray-500 text-[0.8em]">Date of Birth</h1>
-                  <h1>{patientDesc.patient.birth_date}</h1>
-                </span>
-              </div>
-              <div className="flex flex-row">
-                <span className="ml-3">
-                  <h1 className="text-gray-500 text-[0.8em]">Email Address</h1>
-                  <h1>{patientDesc.patient.email}</h1>
-                </span>
-              </div>
-              <div className="flex flex-row">
-                <span className="ml-3">
-                  <h1 className="text-gray-500 text-[0.8em]">Contact Number</h1>
-                  <h1>{patientDesc.patient.contact}</h1>
-                </span>
-              </div>
-              <div className="flex flex-row">
-                <span className="ml-3">
-                  <h1 className="text-gray-500 text-[0.8em]">Address</h1>
-                  <h1>{patientDesc.patient.address}</h1>
-                </span>
-              </div>
-              <div className="flex flex-row">
-                <span className="ml-3">
-                  <h1 className="text-gray-500 text-[0.8em]">Registration Date</h1>
-                  <h1>{patientDesc.patient.account.registration_date}</h1>
-                </span>
-              </div>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button onClick={() => setPatientDesc(undefined)}>Close</Button>
-            </div>
-          </div>
-        </div>
-      )}
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">No patients assigned to this doctor</div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
-      {/* Doctor Deletion Confirmation Modal */}
-      <div className={`${isDoctorDeletionShown ? 'flex' : 'hidden'} justify-center items-center fixed inset-0 bg-black/50 z-50`}>
-        {!havePatients?.havePatients ? 
-          <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-6">
-            <p className="mb-5 text-center">Are you sure you want to unregister this doctor?</p>
-            <div className="flex flex-row justify-evenly items-center w-full h-fit gap-4">
-              <Button 
-                className="bg-green-500 hover:bg-green-400 text-white w-[100px]" 
-                onClick={() => deleteDoctor(havePatients?.doctorId ?? '')}
-              >
-                Yes
-              </Button>
-              <Button 
-                className="bg-red-500 hover:bg-red-400 text-white w-[100px]" 
-                onClick={() => setIsDoctorDeletionShown(false)}
-              >
-                No
-              </Button>
+      {/* Patient Details Dialog */}
+      <Dialog open={!!patientDesc} onOpenChange={() => setPatientDesc(undefined)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Patient Information</DialogTitle>
+          </DialogHeader>
+          {patientDesc && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {patientDesc.patient.full_name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">{patientDesc.patient.full_name}</h3>
+                  <p className="text-muted-foreground capitalize">{patientDesc.patient.gender}</p>
+                </div>
+              </div>
+              <div className="grid gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Date of Birth</p>
+                  <p className="font-medium">{patientDesc.patient.birth_date}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Email Address</p>
+                  <p className="font-medium">{patientDesc.patient.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Contact Number</p>
+                  <p className="font-medium">{patientDesc.patient.contact}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Address</p>
+                  <p className="font-medium">{patientDesc.patient.address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Registration Date</p>
+                  <p className="font-medium">{patientDesc.patient.account.registration_date}</p>
+                </div>
+              </div>
             </div>
-          </div> :
-          <div className="flex flex-col justify-center items-center bg-gray-100 w-[400px] h-[200px] rounded-2xl p-6">
-            <p className="mb-5 text-center">Doctor has patients, cannot be unregistered.</p>
-            <Button 
-              className="bg-green-500 hover:bg-green-400 text-white w-[100px]" 
-              onClick={() => setIsDoctorDeletionShown(false)}
-            >
-              Okay
+          )}
+          <DialogFooter>
+            <Button onClick={() => setPatientDesc(undefined)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Doctor Deletion Confirmation Dialog */}
+      <Dialog open={isDoctorDeletionShown} onOpenChange={setIsDoctorDeletionShown}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{havePatients?.havePatients ? "Cannot Remove Doctor" : "Confirm Removal"}</DialogTitle>
+            <DialogDescription>
+              {havePatients?.havePatients
+                ? "This doctor has patients assigned. Please reassign or remove the patients first."
+                : "Are you sure you want to remove this doctor from the system?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDoctorDeletionShown(false)}>
+              Cancel
             </Button>
-          </div>
-        }
-      </div>
+            {!havePatients?.havePatients && (
+              <Button
+                variant="destructive"
+                onClick={() => havePatients?.doctorId && deleteDoctor(havePatients.doctorId)}
+              >
+                Remove Doctor
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Doctor Dialog */}
       <Dialog open={showAddDoctor} onOpenChange={setShowAddDoctor}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Register New Doctor</DialogTitle>
-            <DialogDescription>
-              Add a new healthcare professional to the platform. All fields are required.
-            </DialogDescription>
+            <DialogDescription>Fill in the doctor's information below. All fields are required.</DialogDescription>
           </DialogHeader>
           <form onSubmit={registerDoctor} className="space-y-6">
             <div>
@@ -544,8 +543,8 @@ export default function AdminDashboard() {
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
                     id="fullName"
-                    value={regForm.fullName}
-                    onChange={(e) => setRegForm({ ...regForm, fullName: e.target.value })}
+                    value={doctor.fullname}
+                    onChange={(e) => setDoctor({ ...doctor, fullname: e.target.value })}
                     placeholder="Dr. John Smith"
                     required
                   />
@@ -556,8 +555,8 @@ export default function AdminDashboard() {
                     <Input
                       id="birthDate"
                       type="date"
-                      value={regForm.birthDate}
-                      onChange={(e) => setRegForm({ ...regForm, birthDate: e.target.value })}
+                      value={doctor.birthDate}
+                      onChange={(e) => setDoctor({ ...doctor, birthDate: e.target.value })}
                       required
                     />
                   </div>
@@ -565,11 +564,12 @@ export default function AdminDashboard() {
                     <Label htmlFor="gender">Gender</Label>
                     <select
                       id="gender"
-                      value={regForm.gender}
-                      onChange={(e) => setRegForm({ ...regForm, gender: e.target.value })}
+                      value={doctor.gender}
+                      onChange={(e) => setDoctor({ ...doctor, gender: e.target.value })}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       required
                     >
+                      <option value="">Select gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
@@ -581,9 +581,9 @@ export default function AdminDashboard() {
                     <Label htmlFor="contact">Contact Number</Label>
                     <Input
                       id="contact"
-                      value={regForm.contact}
-                      onChange={(e) => setRegForm({ ...regForm, contact: e.target.value })}
-                      placeholder="+1 (555) 000-0000"
+                      value={doctor.contact}
+                      onChange={(e) => setDoctor({ ...doctor, contact: e.target.value })}
+                      placeholder="09123456789"
                       required
                     />
                   </div>
@@ -592,9 +592,9 @@ export default function AdminDashboard() {
                     <Input
                       id="email"
                       type="email"
-                      value={regForm.email}
-                      onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-                      placeholder="doctor@medirehab.com"
+                      value={doctor.email}
+                      onChange={(e) => setDoctor({ ...doctor, email: e.target.value })}
+                      placeholder="doctor@hospital.com"
                       required
                     />
                   </div>
@@ -603,9 +603,9 @@ export default function AdminDashboard() {
                   <Label htmlFor="address">Address</Label>
                   <Input
                     id="address"
-                    value={regForm.address}
-                    onChange={(e) => setRegForm({ ...regForm, address: e.target.value })}
-                    placeholder="Enter complete address"
+                    value={doctor.address}
+                    onChange={(e) => setDoctor({ ...doctor, address: e.target.value })}
+                    placeholder="123 Medical Center, City"
                     required
                   />
                 </div>
@@ -619,9 +619,9 @@ export default function AdminDashboard() {
                   <Label htmlFor="username">Username</Label>
                   <Input
                     id="username"
-                    value={regForm.username}
-                    onChange={(e) => setRegForm({ ...regForm, username: e.target.value })}
-                    placeholder="jsmith"
+                    value={doctor.username}
+                    onChange={(e) => setDoctor({ ...doctor, username: e.target.value })}
+                    placeholder="drsmith"
                     required
                   />
                 </div>
@@ -630,51 +630,21 @@ export default function AdminDashboard() {
                   <Input
                     id="password"
                     type="password"
-                    value={regForm.password}
-                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-                    placeholder="••••••••"
+                    value={doctor.password}
+                    onChange={(e) => setDoctor({ ...doctor, password: e.target.value })}
+                    placeholder="Create a secure password"
                     required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Registration Date</Label>
-                  <Input
-                    value={new Date().toISOString().split("T")[0]}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Input
-                    value="Doctor"
-                    disabled
-                    className="bg-muted"
                   />
                 </div>
               </div>
             </div>
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setShowAddDoctor(false)}
-                disabled={registering}
-              >
+              <Button type="button" variant="outline" onClick={() => setShowAddDoctor(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={registering}>
-                {registering ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                    Registering...
-                  </>
-                ) : (
-                  "Register Doctor"
-                )}
+                {registering ? "Registering..." : "Register Doctor"}
               </Button>
             </DialogFooter>
           </form>

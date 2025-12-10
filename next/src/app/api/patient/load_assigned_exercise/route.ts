@@ -1,60 +1,59 @@
 import prisma from "../../../../../lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(req:Request){
-    try {
-        const { patientId } = await req.json();
+export async function POST(req: Request) {
+  try {
+    const { patientId } = await req.json();
 
-        const patientExercise = await prisma.assign.findMany({
-            where:{
-                patient_id:Number(patientId)
-            },
-            select:{
-                exercise_id:true,
-            }
-        });
+    // Get assigned exercises for patient
+    const patientExercise = await prisma.assign.findMany({
+      where: { patient_id: Number(patientId) },
+      select: { exercise_id: true, assign_id: true },
+    });
 
-        const givenExercises = patientExercise.map(exercise => exercise.exercise_id);
+    const givenExercises = patientExercise.map(e => e.exercise_id);
 
-        const exercises = await prisma.exercise.findMany({
-            where:{
-                exercise_id:{ 
-                    in: givenExercises
-                }
-            },
-            select:{
-                exercise: true,
-                description: true,
-                exercise_image: {
-                    select: {
-                        image_name: true,
-                        filepath: true
-                    }
-                },
-                assign: {
-                    select: {
-                        exercise_id:true,
-                        assign_id: true,
-                        result: {
-                            select: {
-                                score: true
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        return NextResponse.json({success: true, exercises: exercises.map(exercise => ({
-            id:exercise.assign?.[0].exercise_id,
-            exercise: exercise.exercise,
-            description: exercise.description,
-            image: exercise.exercise_image[0]?.image_name ?? null,
-            filepath: exercise.exercise_image[0]?.filepath ?? null,
-            score: exercise.assign?.[0]?.result?.[0]?.score ?? null
-        }))});
-
-    } catch (error) {
-        return NextResponse.json({success:false, message:'Internal server error.'});
+    if (givenExercises.length === 0) {
+      return NextResponse.json({ success: true, exercises: [] });
     }
+
+    // Get exercise details
+    const exercises = await prisma.exercise.findMany({
+      where: { exercise_id: { in: givenExercises } },
+      select: {
+        exercise_id: true,
+        exercise: true,
+        description: true,
+        exercise_image: { select: { image_name: true, filepath: true } },
+        assign: {
+          where: { patient_id: Number(patientId) },
+          select: {
+            assign_id: true,
+            exercise_id: true,
+            result: { select: { result_id: true, score: true } },
+          },
+        },
+      },
+    });
+
+    const formatted = exercises.map(ex => {
+      const assign = ex.assign[0];
+      const result = assign?.result?.[0];
+      return {
+        id: ex.exercise_id.toString(),
+        assignId: assign?.assign_id.toString() ?? "",
+        resultId: result?.result_id.toString() ?? "",
+        exercise: ex.exercise,
+        description: ex.description,
+        image: ex.exercise_image[0]?.image_name ?? null,
+        filepath: ex.exercise_image[0]?.filepath ?? null,
+        score: result?.score ?? 0,
+      };
+    });
+
+    return NextResponse.json({ success: true, exercises: formatted });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ success: false, message: "Internal server error." });
+  }
 }
